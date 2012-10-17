@@ -1,7 +1,7 @@
 /*
  * jQuery truncate plugin
  * @author Brendan Brelsford
- * @email brendanb@gmail.com
+ * @email brendan@perfectsensedigital.com
  *
  * @version 1.0 [2012-03-01]
  *
@@ -87,7 +87,9 @@
 if (typeof jQuery !== 'undefined') {
     (function($) {
 
-        $.fn.truncate = $.plugin({
+        $.fn.truncate = function(opts) {
+
+            var options = $.extend({
 
                 // --- Defaults ---
                 'maxLines': 1,
@@ -100,7 +102,7 @@ if (typeof jQuery !== 'undefined') {
                 'debug': false,
                 'contextParent': null
 
-            }, function(plugin, options) {
+            }, opts);
 
             var DEBUG = function(msg) {
                 if((options.debug === true) && (typeof console !== 'undefined')) {
@@ -108,19 +110,20 @@ if (typeof jQuery !== 'undefined') {
                 }
             };
 
-            var startTime = new Date();
+            // matching expression to determine the last word in a string.
+            var lastWordPattern = /(?:^|\W)\w*$/;
+            var firstWordPattern = /(?:^\W+)\w+/;
+            var showLinkHtml = options.showText !== '' ? ' <a class="show" href="#">' + options.showText + '</a>' : '';
+            var hideLinkHtml = options.hideText !== '' ? ' <a class="hide" href="#">' + options.hideText + '</a>' : '';
+
+            var maxHeight = options.maxLines * options.lineHeight;
+            var realMaxHeight = maxHeight + options.allowedExtraLines * options.lineHeight;
 
             var setNodeText = $.browser.msie ? function(node, text) {
                 node.nodeValue = text;
             } : function(node, text) {
                 node.textContent = text;
             };
-
-            // matching expression to determine the last word in a string.
-            var lastWordPattern = /(?:^|\W)\w*$/;
-            var firstWordPattern = /(?:^\W+)\w+/;
-            var showLinkHtml = options.showText !== '' ? ' <a class="show" href="#">' + options.showText + '</a>' : '';
-            var hideLinkHtml = options.hideText !== '' ? ' <a class="hide" href="#">' + options.hideText + '</a>' : '';
 
             // defines a utility function to splice HTML at a text offset
             var getHtmlUntilTextOffset = function($el, offset) {
@@ -208,128 +211,130 @@ if (typeof jQuery !== 'undefined') {
                 return $html;
             };
 
-            var maxHeight = options.maxLines * options.lineHeight;
-            var realMaxHeight = maxHeight + options.allowedExtraLines * options.lineHeight;
+            $(this).each(function() {
 
-            var $text = $(this);
+                var startTime = new Date();
 
-            var originalHeight = $text.height();
+                var $text = $(this);
 
-            if (originalHeight > realMaxHeight) {
+                var originalHeight = $text.height();
 
-                var originalHtml = $text.html();
+                if (originalHeight > realMaxHeight) {
 
-                // check whether a $parent element was specified for a larger DOM context
-                var $contextParent = (options.contextParent === null || options.contextParent === $text) ? $text : $(options.contextParent);
+                    var originalHtml = $text.html();
 
-                var $doppleText;
-                var $doppleParent;
-                if($contextParent.find($text).size() > 0) {
+                    // check whether a $parent element was specified for a larger DOM context
+                    var $contextParent = (options.contextParent === null || options.contextParent === $text) ? $text : $(options.contextParent);
 
-                    var childOffsets = [];
-                    var $node = $text;
-                    var $closestParent = $node.parent();
-                    while($closestParent.size() !== 0 && !($closestParent.find($contextParent).size() > 0)) {
+                    var $doppleText;
+                    var $doppleParent;
+                    if($contextParent.find($text).size() > 0) {
 
-                        childOffsets.unshift($node.index());
-                        $node = $closestParent;
-                        $closestParent = $closestParent.parent();
-                    }
+                        var childOffsets = [];
+                        var $node = $text;
+                        var $closestParent = $node.parent();
+                        while($closestParent.size() !== 0 && !($closestParent.find($contextParent).size() > 0)) {
 
-                    $doppleParent = $contextParent.clone();
-                    $doppleText = $doppleParent;
-                    var i;
-                    for(i = 0; i < childOffsets.length; i++) {
-                        var offset = childOffsets[i];
-                        $doppleText = $doppleText.children().eq(offset);
-                    }
-                } else {
-                    $doppleText = $text.clone();
-                    $doppleParent = $doppleText;
-                }
-
-                $doppleParent.css({
-                    position: 'absolute',
-                    left: '-9999px',
-                    width: $contextParent.width()
-                });
-                $doppleText.css({
-                    'line-height': options.lineHeight + 'px'
-                });
-
-                $contextParent.after($doppleParent);
-
-                var textString = $text.text();
-                var near = 0;
-                var far = textString.length;
-                var mid = far;
-                var truncatedHtml;
-
-                var count = 0;
-
-                do {
-                    if($doppleText.height() > maxHeight) {
-                        far = mid;
-                    } else {
-                        near = mid;
-                    }
-
-                    var avg = Math.floor((far + near) / 2);
-                    mid = lastWordPattern.exec(textString.substring(0, avg)).index;
-                    if(mid === near) {
-                        var nextWord = firstWordPattern.exec(textString.substring(avg, far));
-                        if(nextWord !== null) {
-                            mid = avg + nextWord.index;
+                            childOffsets.unshift($node.index());
+                            $node = $closestParent;
+                            $closestParent = $closestParent.parent();
                         }
+
+                        $doppleParent = $contextParent.clone();
+                        $doppleText = $doppleParent;
+                        var i;
+                        for(i = 0; i < childOffsets.length; i++) {
+                            var offset = childOffsets[i];
+                            $doppleText = $doppleText.children().eq(offset);
+                        }
+                    } else {
+                        $doppleText = $text.clone();
+                        $doppleParent = $doppleText;
                     }
 
-                    truncatedHtml = getHtmlUntilTextOffset($text, mid).html();
-                    $doppleText.html(truncatedHtml + showLinkHtml);
-                    count++;
-                } while((count < 100) && (mid > near));
+                    $doppleParent.css({
+                        position: 'absolute',
+                        left: '-9999px',
+                        width: $contextParent.width()
+                    });
+                    $doppleText.css({
+                        'line-height': options.lineHeight + 'px'
+                    });
 
-                $doppleParent.remove();
+                    $contextParent.after($doppleParent);
 
-                if(options.collapsed === false) {
-                    $text.append(hideLinkHtml);
+                    var textString = $text.text();
+                    var near = 0;
+                    var far = textString.length;
+                    var mid = far;
+                    var truncatedHtml;
+
+                    var count = 0;
+
+                    do {
+                        if($doppleText.height() > maxHeight) {
+                            far = mid;
+                        } else {
+                            near = mid;
+                        }
+
+                        var avg = Math.floor((far + near) / 2);
+                        mid = lastWordPattern.exec(textString.substring(0, avg)).index;
+                        if(mid === near) {
+                            var nextWord = firstWordPattern.exec(textString.substring(avg, far));
+                            if(nextWord !== null) {
+                                mid = avg + nextWord.index;
+                            }
+                        }
+
+                        truncatedHtml = getHtmlUntilTextOffset($text, mid).html();
+                        $doppleText.html(truncatedHtml + showLinkHtml);
+                        count++;
+                    } while((count < 100) && (mid > near));
+
+                    $doppleParent.remove();
+
+                    if(options.collapsed === false) {
+                        $text.append(hideLinkHtml);
+                    } else {
+                        $text.html(truncatedHtml + showLinkHtml);
+                    }
+
+                    $text.css({
+                        'display': 'block',
+                        'line-height': options.lineHeight + 'px'
+                    });
+
+                    $text.delegate('.show', 'click', function(event) {
+
+                        event.preventDefault();
+
+                        $text.html(originalHtml + hideLinkHtml);
+                        $text.css('height', 'auto');
+
+                        $text.trigger('show');
+                        $text.trigger('toggle');
+                    });
+
+                    $text.delegate('.hide', 'click', function(event) {
+
+                        event.preventDefault();
+
+                        $text.html(truncatedHtml + showLinkHtml);
+                        $text.css('height', maxHeight + 'px');
+                        $text.trigger('hide');
+                        $text.trigger('toggle');
+                    });
+                    DEBUG("truncate.js: truncated element with height " + originalHeight + "px > " + realMaxHeight + "px in " + count + " steps.");
                 } else {
-                    $text.html(truncatedHtml + showLinkHtml);
+                    DEBUG("truncate.js: skipped processing element with height " + originalHeight + "px < " + realMaxHeight + "px");
                 }
 
-                $text.css({
-                    'display': 'block',
-                    'line-height': options.lineHeight + 'px'
-                });
+                var endTime = new Date();
 
-                $text.delegate('.show', 'click', function(event) {
-
-                    event.preventDefault();
-
-                    $text.html(originalHtml + hideLinkHtml);
-                    $text.css('height', 'auto');
-
-                    plugin.trigger('show');
-                    plugin.trigger('toggle');
-                });
-
-                $text.delegate('.hide', 'click', function(event) {
-
-                    event.preventDefault();
-
-                    $text.html(truncatedHtml + showLinkHtml);
-                    $text.css('height', maxHeight + 'px');
-                    plugin.trigger('hide');
-                    plugin.trigger('toggle');
-                });
-                DEBUG("truncate.js: truncated element with height " + originalHeight + "px > " + realMaxHeight + "px in " + count + " steps.");
-            } else {
-                DEBUG("truncate.js: skipped processing element with height " + originalHeight + "px < " + realMaxHeight + "px");
-            }
-
-            var endTime = new Date();
-
-            DEBUG("truncate.js: took " + (endTime - startTime) + "  ms to execute.");
-        });
+                DEBUG("truncate.js: took " + (endTime - startTime) + "  ms to execute.");
+            });
+        };
 
     })(jQuery);
 }
