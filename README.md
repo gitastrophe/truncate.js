@@ -16,3 +16,5 @@ a jQuery plugin for deep-HTML truncation and toggling
 4. Toggling between truncated and un-truncated states with configurable hyperlink text
 5. Triggered events when the truncated state of the text is changed
 6. O(log n) execution time for n := text length
+7. Pre-truncation analysis is performed on cloned elements to minimize DOM flicker
+8. Optional console logging of execution time and number of steps for performance analysis
