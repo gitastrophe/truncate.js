@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+<head>
+    <title>truncate.js - a jQuery plugin for deep-html truncation and toggling</title>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script type="text/javascript" src="/assets/js/jquery.plugin.js"></script>
+    <script type="text/javascript" src="/assets/js/jquery.truncate.js"></script>
+    <style type="text/css">
+        #demo-container {
+            width: 900px;
+            min-height: 600px;
+            margin: auto;
+            padding-bottom: 10px;
+        }
+        #demo-target-container {
+            display: inline-block;
+            vertical-align: top;
+            width: 300px;
+            min-height: 500px;
+            border: 1px solid #cccccc;
+            padding: 10px;
+        }
+        #demo-config {
+            display: inline-block;
+            vertical-align: top;
+            width: 200px;
+            padding: 10px;
+            height: 500px;
+        }
+        #demo-source {
+            display: inline-block;
+            vertical-align: top;
+            width: 300px;
+            min-height: 500px;
+            line-height: 24px;
+            font-size: 16px;
+            border: 1px solid #cccccc;
+            padding: 10px;
+        }
+        #demo-target {
+            line-height: 24px;
+            font-size: 16px;
+        }
+        img {
+            display: block;
+            padding: 10px;
+            border: 1px solid #cccccc;
+            margin-right: 10px;
+        }
+        img.left {
+            float: left;
+        }
+        p {
+            margin: 0;
+        }
+        #reasons, #features {
+            width: 49.5%;
+            display: inline-block;
+            vertical-align: top;
+        }
+    </style>
+</head>
+<body>
+    <div id="demo-container">
+        <div id="faq">
+            <div id="reasons">
+                <h2>Reasons to use truncate.js</h2>
+                <ol>
+                    <li>
+                        Server-side text truncation based on character counts is always incorrect.
+                        The width of the character string <span class="sample-text-1">"iiiii"</span> is <span class="text-length-difference">much less</span> than the width of <span class="sample-text-2">"MMMMM"</span> unless a monospace font is used.
+                    </li>
+                    <li>
+                        The CSS3 property "text-overflow" can only truncate a single line of text, and is not supported by IE7 and below.
+                    </li>
+                </ol>
+            </div>
+            <div id="features">
+                <h2>Features</h2>
+                <ol>
+                    <li>Text truncation to a specified number of lines, including text that wraps around other floated elements.</li>
+                    <li>Deep-HTML truncation with preservation of all non-type3 (text) nodes</li>
+                    <li>Optional specification of a truncation suffix, e.g. &#8230;</li>
+                    <li>Toggling between truncated and un-truncated states with configurable hyperlink text</li>
+                    <li>Triggered events when the truncated state of the text is changed</li>
+                    <li>O(log n) execution time for n := text length</li>
+                </ol>
+            </div>
+        </div>
+        <div id="demo-source">
+            <img class="left" src="http://placehold.it/100x200" />
+            <p  contenteditable="true">
+                Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical <a href="#">Latin literature from 45 BC, making it over 2000 years old</a>. Richard McClintock, a Latin professor at Hampden-Sydney College in Virginia, looked up one of the more obscure Latin words, consectetur, from a Lorem Ipsum passage, and going through the cites of the word in classical literature, discovered the undoubtable source. Lorem Ipsum comes from sections 1.10.32 and 1.10.33 of "de Finibus Bonorum et Malorum" (The Extremes of Good and Evil) by Cicero, written in 45 BC. This book is a treatise on the theory of ethics, very popular during the Renaissance. The first line of Lorem Ipsum, "Lorem ipsum dolor sit amet..", comes from a line in section 1.10.32.
+            </p>
+        </div>
+        <div id="demo-config">
+            <div class="inputContainer">
+                <label for="maxLines">Max Lines</label>
+                <input id="maxLines" type="text" name="maxLines" value="11" />
+            </div>
+            <div class="inputContainer">
+                <label for="truncateString">Truncate String</label>
+                <input id="truncateString" type="text" name="truncateString" value="&amp;nbsp;&amp;#8230;" />
+            </div>
+            <div class="inputContainer">
+                <label for="showText">"Show" Text</label>
+                <input id="showText" type="text" name="showText" value="more" />
+            </div>
+            <div class="inputContainer">
+                <label for="hideText">"Hide" Text</label>
+                <input id="hideText" type="text" name="hideText" value="less" />
+            </div>
+            <div class="inputContainer">
+                <label for="isExpanded">Start Expanded</label>
+                <input id="isExpanded" type="checkbox" name="isCollapsed" value="true" />
+            </div>
+            <input id="truncate-submit" type="submit" value="Truncate!" />
+        </div>
+        <div id="demo-target-container">
+            <div id="demo-target">
+
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript">
+        $('#demo-config #truncate-submit').click(function() {
+
+            $('#demo-target').remove();
+            $('#demo-target-container').append($('<div />', { id: 'demo-target' }));
+
+            var html = $('#demo-source').html();
+            $('#demo-target').html(html);
+
+            var maxLines = parseInt($('#maxLines').val(), 10);
+            var lineHeight = parseInt($('#lineHeight').val(), 10);
+            var truncateString = $('#truncateString').val();
+            var showText = $('#showText').val();
+            var hideText = $('#hideText').val();
+            var collapsed = $('#isExpanded:checked').size() > 0 ? false : true;
+
+            $('#demo-target p').truncate({
+                'maxLines': maxLines,
+                'lineHeight': 24,
+                'truncateString': truncateString,
+                'showText': showText,
+                'hideText': hideText,
+                'collapsed': collapsed,
+                'debug': true,
+                'contextParent': $('#demo-target')
+            });
+        });
+
+        var width1 = $('.sample-text-1').width();
+        var width2 = $('.sample-text-2').width();
+
+        var pctDiff = (width2 - width1) / width2 * 100;
+
+        $('.text-length-difference').html(pctDiff.toFixed(1) + "% less");
+    </script>
+</body>
+</html>
