@@ -188,7 +188,8 @@
         }).live('resize', function(event, ui) {
             var $content = $('#demo-target p');
             $content.truncate('options', buildOptions());
-            $content.truncate('update', '<em><strong>Triggered from re-size to [' + ui.size.width + ', ' + ui.size.height + '].</strong></em>' + $('#demo-source p').html());
+//            $content.truncate('update', '<em><strong>Triggered from re-size to [' + ui.size.width + ', ' + ui.size.height + '].</strong></em>' + $('#demo-source p').html());
+            $content.truncate('update');
         });
         
         $('#demo-config #truncate-submit').click(function() {

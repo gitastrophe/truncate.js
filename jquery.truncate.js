@@ -74,7 +74,8 @@
  *
  *      "update" - Takes an optional second argument to pass new HTML.  With or without the argument, the original truncated
  *                 element will be re-truncated.  This is useful to hook into a callback when the truncated element can be
- *                 subject to re-sizing (i.e. responsive design)
+ *                 subject to re-sizing (i.e. responsive design).  If no HTML is passed, but the contents of the truncated text
+ *                 have been modified, the modified text will be used in place of the original.
  *
  * Examples:
  *
@@ -204,6 +205,9 @@ if (typeof jQuery !== 'undefined') {
         // define main workhorse method, "truncate" to be used both on the initial call and on subsequent invocations of the "update" method
         var truncate = function($el, options, html) {
 
+            // declare variable to store response value - the char offset at which truncation occurred
+            var truncationPoint = null;
+            
             // define DEBUG function specific to each instance
             var DEBUG = function(msg) {
                 if((options.debug === true) && (typeof console !== 'undefined')) {
@@ -371,18 +375,22 @@ if (typeof jQuery !== 'undefined') {
                         $el.trigger('toggle');
                     });
                     DEBUG("truncate.js: truncated element with height " + originalHeight + "px > " + realMaxHeight + "px in " + count + " steps.");
+                    truncationPoint = mid;
+
                 } else {
                     $doppleParent.remove();
                     $el.html(html);
+                    truncationPoint = html.length;
                 }
-
             } else {
                 DEBUG("truncate.js: skipped processing element with height " + originalHeight + "px < " + realMaxHeight + "px");
+                truncationPoint = html.length;
             }
 
             var endTime = new Date();
 
             DEBUG("truncate.js: took " + (endTime - startTime) + "  ms to execute.");
+            return truncationPoint;
         };
         
         function Truncate(el, options) {
@@ -409,7 +417,6 @@ if (typeof jQuery !== 'undefined') {
 
             if(this.config['lineHeight'] === null) {
                 var empiricalLineHeight = parseInt(this.$el.css('line-height'), 10);
-                console.log("detected line-height of: " + empiricalLineHeight);
                 if(typeof empiricalLineHeight === 'number' && !isNaN(empiricalLineHeight)) {
                     this.config['lineHeight'] = empiricalLineHeight;
                 } else {
@@ -418,6 +425,7 @@ if (typeof jQuery !== 'undefined') {
             }
             
             this.html = this.$el.html();
+            this.lastTruncationPoint = null;
         };
         
         Truncate.prototype = {
@@ -430,12 +438,17 @@ if (typeof jQuery !== 'undefined') {
                 return this.config;
             },
             
-            update: function(html) {
+            update: function(updatedHtml) {
                 
-                if(typeof html === 'undefined') {
-                    html = this.html;
+                if(typeof updatedHtml === 'undefined') {
+                    var elementHtml = this.$el.html();
+                    if(typeof this.lastHtmlLength !== 'undefined' && elementHtml.length !== this.lastHtmlLength) {
+                        updatedHtml = elementHtml.substring(0,this.lastTruncationPoint) + this.html.substring(this.lastTruncationPoint);
+                        this.html = updatedHtml;
+                    }
                 }
-                truncate(this.$el, this.config, html);
+                this.lastTruncationPoint = truncate(this.$el, this.config, this.html);
+                this.lastHtmlLength = this.$el.html().length;
             }
         };
 
@@ -449,7 +462,8 @@ if (typeof jQuery !== 'undefined') {
                     var $this = $(this);
                     var plugin = new Truncate($this, methodName);
                     $this.data('truncatePlugin', plugin)
-                    truncate($this, plugin.config, plugin.html);
+                    plugin.lastTruncationPoint = truncate($this, plugin.config, plugin.html);
+                    plugin.lastHtmlLength = $this.html().length;
                 });
             }
             
