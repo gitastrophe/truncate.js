@@ -97,6 +97,10 @@
  *         'truncateString': '&nbsp;&#8230;',
  *         'contextParent': $contextParent
  *     });
+ *
+ * Known Issues:
+ *     - The "update" method with 0 parameters will fail to recognize a change in the truncated HTML if the HTML length is
+ *         the same as before the change was made.
  */
 
 
@@ -446,6 +450,8 @@ if (typeof jQuery !== 'undefined') {
                         updatedHtml = elementHtml.substring(0,this.lastTruncationPoint) + this.html.substring(this.lastTruncationPoint);
                         this.html = updatedHtml;
                     }
+                } else {
+                    this.html = updatedHtml;
                 }
                 this.lastTruncationPoint = truncate(this.$el, this.config, this.html);
                 this.lastHtmlLength = this.$el.html().length;
