@@ -201,8 +201,10 @@ if (typeof jQuery !== 'undefined') {
             return $html.html();
         };
 
+        // define main workhorse method, "truncate" to be used both on the initial call and on subsequent invocations of the "update" method
         var truncate = function($el, options, html) {
 
+            // define DEBUG function specific to each instance
             var DEBUG = function(msg) {
                 if((options.debug === true) && (typeof console !== 'undefined')) {
                     console.log(msg);
@@ -215,9 +217,10 @@ if (typeof jQuery !== 'undefined') {
             var maxHeight = options.maxLines * options.lineHeight;
             var realMaxHeight = maxHeight + options.allowedExtraLines * options.lineHeight;
 
+            // used to debug the execution time
             var startTime = new Date();
 
-
+            // this variable is used to hold the un-truncated HTML, since $el may already contain truncated HTML
             var $html = $('<div/>');
             $html.html(html);
 
@@ -227,10 +230,18 @@ if (typeof jQuery !== 'undefined') {
                 // check whether a $parent element was specified for a larger DOM context
                 var $contextParent = (options.contextParent === null || options.contextParent === $el) ? $el : $(options.contextParent);
 
+                // clone of the selected element
                 var $doppleText;
+                // clone of the options.contextParent, for use when contextParent is specified
                 var $doppleParent;
+
+                // If the contextParent contains the selected element, then they are ancestor-descendent.
+                // If not, then set the contextParent to the element itself.
                 if($contextParent.find($el).size() > 0) {
 
+                    // If a contextParent was specified, then the cloned element itself must be found
+                    // by navigating the original HTML structure and mirroring the navigation in the
+                    // cloned HTML structure.
                     var childOffsets = [];
                     var $node = $el;
                     var $closestParent = $node.parent();
@@ -241,6 +252,9 @@ if (typeof jQuery !== 'undefined') {
                         $closestParent = $closestParent.parent();
                     }
 
+                    // The array of childOffsets stores the offset of the cloned element's ancestor at each
+                    // level of the DOM heirarchy, relative to the cloned parent.  By iteratively navigating
+                    // to the specified child index, the cloned element can be found.
                     $doppleParent = $contextParent.clone();
                     $doppleText = $doppleParent;
                     var i;
@@ -248,33 +262,38 @@ if (typeof jQuery !== 'undefined') {
                         var offset = childOffsets[i];
                         $doppleText = $doppleText.children().eq(offset);
                     }
+
+                    // Always reset the html of the clone, because this function is used both for initial and repeat
+                    // truncations.  In the latter case, $el.html() is already truncated, so the clone must use the original
+                    // html, passed as a parameter to this method.
                     $doppleText.html(html);
                 } else {
+    
                     $doppleText = $el.clone();
+                    // Always reset the html of the clone (see directly above)
                     $doppleText.html(html);
                     $doppleParent = $doppleText;
                 }
 
+                // Position the clone outside the page but still visibile, so that the browser can accurately detect
+                // its height during the binary search.
                 $doppleParent.css({
                     position: 'absolute',
                     left: '-9999px',
                     width: $contextParent.width()
                 });
+                // Enforce the 'line-height' style to ensure that the calculation is correct.
                 $doppleText.css({
                     'line-height': options.lineHeight + 'px'
                 });
 
                 $contextParent.after($doppleParent);
 
-                var originalHeight;
-                if(typeof $el.data('truncatePlugin') === 'undefined') {
-                    originalHeight = $el.height();
-                } else {
-                    // if this element has already been truncated, need to check the height empirically using the supplied html
-                    originalHeight = $doppleText.height();
-                }
+                // Determine the un-truncated HTML height by measuring the cloned element.  This will work both for initial and
+                // repeat calls to "truncate".
+                var originalHeight = $doppleText.height();
                 
-                // this second check is for elements that have already been truncated before, because the true "originalHeight"
+                // This second check is for elements that have already been truncated before, because the true "originalHeight"
                 // can only be determined in these cases after the $doppleText has been appended to the DOM
                 if(originalHeight > realMaxHeight) {
                     var textString = $html.text();
@@ -285,15 +304,22 @@ if (typeof jQuery !== 'undefined') {
 
                     var count = 0;
 
+                    // Iterate either until the binary search has ended or options.maxSteps has been reached
+                    // Three markers are used to implement the binary search: near, mid, and far.  
                     do {
                         if($doppleText.height() > maxHeight) {
+                            // If the text is too long, bring in the "far" marker
                             far = mid;
                         } else {
+                            // If the text is too short, push out the "near" marker
                             near = mid;
                         }
-
+                        
+                        // re-calculate the new mid to be the closest word boundary before the numerical midpoint of near & far
                         var avg = Math.floor((far + near) / 2);
                         mid = lastWordPattern.exec(textString.substring(0, avg)).index;
+
+                        // if this puts mid equal to near, try the first word pattern after the numerical midpoint of near & far
                         if(mid === near) {
                             var nextWord = firstWordPattern.exec(textString.substring(avg, far));
                             if(nextWord !== null) {
@@ -301,24 +327,29 @@ if (typeof jQuery !== 'undefined') {
                             }
                         }
 
+                        // Re-truncate the original HTML up to "mid" and put it into the cloned element
                         truncatedHtml = getHtmlUntilTextOffset(html, mid, options.truncateString);
                         $doppleText.html(truncatedHtml + showLinkHtml);
                         count++;
-                    } while((count < 100) && (mid > near));
+                    } while((count < options.maxSteps) && (mid > near));
 
+                    // truncatedHtml is already stored, so remove the cloned element
                     $doppleParent.remove();
 
+                    // Append the either html + hideLinkHtml or truncatedHTML + showLinkHtml based on options.collapsed
                     if(options.collapsed === false) {
-                        $el.append(hideLinkHtml);
+                        $el.html(html + hideLinkHtml);
                     } else {
                         $el.html(truncatedHtml + showLinkHtml);
                     }
 
+                    // Enforce block display and the specified line-height on the truncated element
                     $el.css({
                         'display': 'block',
                         'line-height': options.lineHeight + 'px'
                     });
 
+                    // Delegate handlers to ".show" and ".hide" that swap the original / truncated HTML on click
                     $el.delegate('.show', 'click', function(event) {
 
                         event.preventDefault();
@@ -341,7 +372,6 @@ if (typeof jQuery !== 'undefined') {
                     });
                     DEBUG("truncate.js: truncated element with height " + originalHeight + "px > " + realMaxHeight + "px in " + count + " steps.");
                 } else {
-                    DEBUG("How did the plugin get undefined??");
                     $doppleParent.remove();
                     $el.html(html);
                 }
@@ -367,7 +397,8 @@ if (typeof jQuery !== 'undefined') {
                 'hideText': '',
                 'collapsed': true,
                 'debug': false,
-                'contextParent': null
+                'contextParent': null,
+                'maxSteps': 100
             };
             
             // extend the default config with specified options
