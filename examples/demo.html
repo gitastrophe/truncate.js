@@ -171,7 +171,6 @@
 
             return {
                 'maxLines': parseInt($('#maxLines').val(), 10),
-                'lineHeight': 24,
                 'truncateString': $('#truncateString').val(),
                 'showText': $('#showText').val(),
                 'hideText': $('#hideText').val(),
@@ -186,17 +185,11 @@
             'maxHeight': 500,
             'minWidth': 300,
             'maxWidth': 600
-        }).live('resize', $.throttle(100, function(event, ui) {
-//            $('#demo-target').remove();
-//            $('#demo-target-container').append($('<div />', { id: 'demo-target' }));
-
-//            var html = $('#demo-source').html();
-//            $('#demo-target').html(html);
+        }).live('resize', function(event, ui) {
             var $content = $('#demo-target p');
-
             $content.truncate('options', buildOptions());
             $content.truncate('update', '<em><strong>Triggered from re-size to [' + ui.size.width + ', ' + ui.size.height + '].</strong></em>' + $('#demo-source p').html());
-        }));
+        });
         
         $('#demo-config #truncate-submit').click(function() {
 

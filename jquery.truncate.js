@@ -32,6 +32,11 @@
  *                  Allowed Values: integer > 0
  *                  Default Value: 1
  *
+ *     "lineHeight" - The line-height value that should be used to calculate the vertical truncation point.  If unspecified,
+ *                  it will be calculated using the CSS value from each selected element.
+ *                  Allowed Values: integer > 0
+ *                  Default Value: null
+ *
  *     "allowedExtraLines" - Target "maxLines", but allow up to this many extra lines if text is long enough.
  *                  Allowed Values: integer >= 0
  *                  Default Value: 0
@@ -355,7 +360,7 @@ if (typeof jQuery !== 'undefined') {
             // --- Defaults ---
             this.defaults = {
                 'maxLines': 1,
-                'lineHeight': 15,
+                'lineHeight': null,
                 'allowedExtraLines': 0,
                 'truncateString': '',
                 'showText': '',
@@ -370,6 +375,16 @@ if (typeof jQuery !== 'undefined') {
             
             // store a reference to the jQuery object
             this.$el = $(el);
+
+            if(this.config['lineHeight'] === null) {
+                var empiricalLineHeight = parseInt(this.$el.css('line-height'), 10);
+                console.log("detected line-height of: " + empiricalLineHeight);
+                if(typeof empiricalLineHeight === 'number' && !isNaN(empiricalLineHeight)) {
+                    this.config['lineHeight'] = empiricalLineHeight;
+                } else {
+                    throw new Error("No \"lineHeight\" parameter was specified and none could be calculated.");
+                }
+            }
             
             this.html = this.$el.html();
         };
