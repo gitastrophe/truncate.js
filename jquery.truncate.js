@@ -61,6 +61,16 @@
  *     "contextParent" - A parent DOM element to use as the cloned element for measuring height of the cloned text.  This is necessary
  *                   when the text node can have its text displaced by floated elements inside a common parent.
  *
+ * Methods:
+ *
+ *      Methods are invoked via $('.selector').truncate(methodName, arguments...)
+ *
+ *      "options" - Pass an object argument to reset the options.  This does not immediately trigger an updated truncation.
+ *
+ *      "update" - Takes an optional second argument to pass new HTML.  With or without the argument, the original truncated
+ *                 element will be re-truncated.  This is useful to hook into a callback when the truncated element can be
+ *                 subject to re-sizing (i.e. responsive design)
+ *
  * Examples:
  *
  *     Truncate to 3 lines with a trailing ellipsis, "Read More" text when collapsed, and no hide text.
@@ -87,22 +97,106 @@
 if (typeof jQuery !== 'undefined') {
     (function($) {
 
-        $.fn.truncate = function(opts) {
+        // matching expression to determine the last word in a string.
+        var lastWordPattern = /(?:^|\W)\w*$/;
+        var firstWordPattern = /(?:^\W+)\w+/;
 
-            var options = $.extend({
+        var setNodeText = $.browser.msie ? function(node, text) {
+            node.nodeValue = text;
+        } : function(node, text) {
+            node.textContent = text;
+        };
 
-                // --- Defaults ---
-                'maxLines': 1,
-                'lineHeight': 15,
-                'allowedExtraLines': 0,
-                'truncateString': '',
-                'showText': '',
-                'hideText': '',
-                'collapsed': true,
-                'debug': false,
-                'contextParent': null
+        // defines a utility function to splice HTML at a text offset
+        var getHtmlUntilTextOffset = function(html, offset, truncateString) {
 
-            }, opts);
+            var queue = [];
+            var $html = $('<div/>');
+            $html.html(html);
+            var textLen = 0;
+
+            // testing var to prevent infinite loops
+            var count = 0;
+
+            // remove child nodes from this node and push all onto the queue in reverse order (this implements depth-first search).
+            var rootChildren = $html.contents().detach();
+            var n = 0;
+            for(n = rootChildren.size() - 1; n >= 0; --n) {
+
+                queue.push({$parent: $html, node: rootChildren.get(n)});
+            }
+
+            while((queue.length > 0) && (textLen < offset) && (count < 100)) {
+
+                var queueItem = queue.pop();
+                var node = queueItem.node;
+                var $node = $(node);
+                var nodeTextLen = 0;
+                var nodeText;
+
+                // process text nodes distinctly from other node types
+                if(node.nodeType === 3) {
+
+                    var $nodeParent = queueItem.$parent;
+
+                    // append $node to $html with children.  if children were detached above, then this is an empty node
+                    $nodeParent.append($node);
+
+                    nodeText = $node.text();
+                    nodeTextLen = nodeText.length;
+
+                    // if the text node's contents would put textLen above offset, perform truncation
+                    if (nodeTextLen > offset - textLen) {
+
+                        var match = lastWordPattern.exec(nodeText.substring(0, offset - textLen));
+                        var lastWordOffset = match.index + match[0].length;
+                        setNodeText(node, nodeText.substring(0, lastWordOffset));
+
+                        if(typeof truncateString !== 'undefined') {
+                            if(!($nodeParent.is('a'))) {
+                                $nodeParent.append(truncateString);
+                            } else {
+                                $nodeParent.parent().append(truncateString);
+                            }
+                        }
+
+                        // stop processing nodes.  the last word that will not exceed the offset has been found.
+                        textLen += lastWordOffset;
+                        break;
+
+                    } else {
+                        textLen += nodeTextLen;
+                    }
+
+                } else {
+
+                    nodeText = $node.text();
+                    nodeTextLen = nodeText.length;
+
+                    // if the text content of this node and its children is greater than the gap between the accumulated text length and offset
+                    if(nodeTextLen > offset - textLen) {
+
+                        // remove child nodes from this node and push all onto the queue in reverse order (this implements depth-first search).
+                        var children = $node.contents().detach();
+                        var i = 0;
+                        for(i = children.size() - 1; i >= 0; --i) {
+
+                            queue.push({$parent: $node, node: children.get(i)});
+                        }
+                    } else {
+
+                        textLen += nodeTextLen;
+                    }
+
+                    // append $node to $html with children.  if children were detached above, then this is an empty node
+                    queueItem.$parent.append($node);
+                }
+            }
+
+            return $html.html();
+        };
+
+        var truncate = function($el, options, html) {
 
             var DEBUG = function(msg) {
                 if((options.debug === true) && (typeof console !== 'undefined')) {
@@ -110,160 +204,75 @@ if (typeof jQuery !== 'undefined') {
                 }
             };
 
-            // matching expression to determine the last word in a string.
-            var lastWordPattern = /(?:^|\W)\w*$/;
-            var firstWordPattern = /(?:^\W+)\w+/;
+            // options-based variables
             var showLinkHtml = options.showText !== '' ? ' <a class="show" href="#">' + options.showText + '</a>' : '';
             var hideLinkHtml = options.hideText !== '' ? ' <a class="hide" href="#">' + options.hideText + '</a>' : '';
-
             var maxHeight = options.maxLines * options.lineHeight;
             var realMaxHeight = maxHeight + options.allowedExtraLines * options.lineHeight;
 
-            var setNodeText = $.browser.msie ? function(node, text) {
-                node.nodeValue = text;
-            } : function(node, text) {
-                node.textContent = text;
-            };
+            var startTime = new Date();
 
-            // defines a utility function to splice HTML at a text offset
-            var getHtmlUntilTextOffset = function($el, offset) {
 
-                var queue = [];
-                var $html = $('<div/>');
-                var textLen = 0;
+            var $html = $('<div/>');
+            $html.html(html);
 
-                // testing var to prevent infinite loops
-                var count = 0;
+            // proceed if the element has already been truncated, or if its height is larger than the real max height
+            if (typeof $el.data('truncatePlugin') !== 'undefined' || $el.height() > realMaxHeight) {
 
-                // remove child nodes from this node and push all onto the queue in reverse order (this implements depth-first search).
-                var rootChildren = $el.clone().contents().detach();
-                var n = 0;
-                for(n = rootChildren.size() - 1; n >= 0; --n) {
+                // check whether a $parent element was specified for a larger DOM context
+                var $contextParent = (options.contextParent === null || options.contextParent === $el) ? $el : $(options.contextParent);
 
-                    queue.push({$parent: $html, node: rootChildren.get(n)});
-                }
+                var $doppleText;
+                var $doppleParent;
+                if($contextParent.find($el).size() > 0) {
 
-                while((queue.length > 0) && (textLen < offset) && (count < 100)) {
+                    var childOffsets = [];
+                    var $node = $el;
+                    var $closestParent = $node.parent();
+                    while($closestParent.size() !== 0 && !($closestParent.find($contextParent).size() > 0)) {
 
-                    var queueItem = queue.pop();
-                    var node = queueItem.node;
-                    var $node = $(node);
-                    var nodeTextLen = 0;
-                    var nodeText;
-
-                    // process text nodes distinctly from other node types
-                    if(node.nodeType === 3) {
-
-                        var $nodeParent = queueItem.$parent;
-
-                        // append $node to $html with children.  if children were detached above, then this is an empty node
-                        $nodeParent.append($node);
-
-                        nodeText = $node.text();
-                        nodeTextLen = nodeText.length;
-
-                        // if the text node's contents would put textLen above offset, perform truncation
-                        if (nodeTextLen > offset - textLen) {
-
-                            var match = lastWordPattern.exec(nodeText.substring(0, offset - textLen));
-                            var lastWordOffset = match.index + match[0].length;
-                            setNodeText(node, nodeText.substring(0, lastWordOffset));
-
-                            if(!($nodeParent.is('a'))) {
-                                $nodeParent.append(options.truncateString);
-                            } else {
-                                $nodeParent.parent().append(options.truncateString);
-                            }
-
-                            // stop processing nodes.  the last word that will not exceed the offset has been found.
-                            textLen += lastWordOffset;
-                            break;
-
-                        } else {
-                            textLen += nodeTextLen;
-                        }
-
-                    } else {
-
-                        nodeText = $node.text();
-                        nodeTextLen = nodeText.length;
-
-                        // if the text content of this node and its children is greater than the gap between the accumulated text length and offset
-                        if(nodeTextLen > offset - textLen) {
-
-                            // remove child nodes from this node and push all onto the queue in reverse order (this implements depth-first search).
-                            var children = $node.contents().detach();
-                            var i = 0;
-                            for(i = children.size() - 1; i >= 0; --i) {
-
-                                queue.push({$parent: $node, node: children.get(i)});
-                            }
-                        } else {
-
-                            textLen += nodeTextLen;
-                        }
-
-                        // append $node to $html with children.  if children were detached above, then this is an empty node
-                        queueItem.$parent.append($node);
-                    }
-                }
-
-                return $html;
-            };
-
-            $(this).each(function() {
-
-                var startTime = new Date();
-
-                var $text = $(this);
-
-                var originalHeight = $text.height();
-
-                if (originalHeight > realMaxHeight) {
-
-                    var originalHtml = $text.html();
-
-                    // check whether a $parent element was specified for a larger DOM context
-                    var $contextParent = (options.contextParent === null || options.contextParent === $text) ? $text : $(options.contextParent);
-
-                    var $doppleText;
-                    var $doppleParent;
-                    if($contextParent.find($text).size() > 0) {
-
-                        var childOffsets = [];
-                        var $node = $text;
-                        var $closestParent = $node.parent();
-                        while($closestParent.size() !== 0 && !($closestParent.find($contextParent).size() > 0)) {
-
-                            childOffsets.unshift($node.index());
-                            $node = $closestParent;
-                            $closestParent = $closestParent.parent();
-                        }
-
-                        $doppleParent = $contextParent.clone();
-                        $doppleText = $doppleParent;
-                        var i;
-                        for(i = 0; i < childOffsets.length; i++) {
-                            var offset = childOffsets[i];
-                            $doppleText = $doppleText.children().eq(offset);
-                        }
-                    } else {
-                        $doppleText = $text.clone();
-                        $doppleParent = $doppleText;
+                        childOffsets.unshift($node.index());
+                        $node = $closestParent;
+                        $closestParent = $closestParent.parent();
                     }
 
-                    $doppleParent.css({
-                        position: 'absolute',
-                        left: '-9999px',
-                        width: $contextParent.width()
-                    });
-                    $doppleText.css({
-                        'line-height': options.lineHeight + 'px'
-                    });
+                    $doppleParent = $contextParent.clone();
+                    $doppleText = $doppleParent;
+                    var i;
+                    for(i = 0; i < childOffsets.length; i++) {
+                        var offset = childOffsets[i];
+                        $doppleText = $doppleText.children().eq(offset);
+                    }
+                    $doppleText.html(html);
+                } else {
+                    $doppleText = $el.clone();
+                    $doppleText.html(html);
+                    $doppleParent = $doppleText;
+                }
 
-                    $contextParent.after($doppleParent);
+                $doppleParent.css({
+                    position: 'absolute',
+                    left: '-9999px',
+                    width: $contextParent.width()
+                });
+                $doppleText.css({
+                    'line-height': options.lineHeight + 'px'
+                });
 
-                    var textString = $text.text();
+                $contextParent.after($doppleParent);
+
+                var originalHeight;
+                if(typeof $el.data('truncatePlugin') === 'undefined') {
+                    originalHeight = $el.height();
+                } else {
+                    // if this element has already been truncated, need to check the height empirically using the supplied html
+                    originalHeight = $doppleText.height();
+                }
+                
+                // this second check is for elements that have already been truncated before, because the true "originalHeight"
+                // can only be determined in these cases after the $doppleText has been appended to the DOM
+                if(originalHeight > realMaxHeight) {
+                    var textString = $html.text();
                     var near = 0;
                     var far = textString.length;
                     var mid = far;
@@ -287,7 +296,7 @@ if (typeof jQuery !== 'undefined') {
                             }
                         }
 
-                        truncatedHtml = getHtmlUntilTextOffset($text, mid).html();
+                        truncatedHtml = getHtmlUntilTextOffset(html, mid, options.truncateString);
                         $doppleText.html(truncatedHtml + showLinkHtml);
                         count++;
                     } while((count < 100) && (mid > near));
@@ -295,46 +304,126 @@ if (typeof jQuery !== 'undefined') {
                     $doppleParent.remove();
 
                     if(options.collapsed === false) {
-                        $text.append(hideLinkHtml);
+                        $el.append(hideLinkHtml);
                     } else {
-                        $text.html(truncatedHtml + showLinkHtml);
+                        $el.html(truncatedHtml + showLinkHtml);
                     }
 
-                    $text.css({
+                    $el.css({
                         'display': 'block',
                         'line-height': options.lineHeight + 'px'
                     });
 
-                    $text.delegate('.show', 'click', function(event) {
+                    $el.delegate('.show', 'click', function(event) {
 
                         event.preventDefault();
 
-                        $text.html(originalHtml + hideLinkHtml);
-                        $text.css('height', 'auto');
+                        $el.html(html + hideLinkHtml);
+                        $el.css('height', 'auto');
 
-                        $text.trigger('show');
-                        $text.trigger('toggle');
+                        $el.trigger('show');
+                        $el.trigger('toggle');
                     });
 
-                    $text.delegate('.hide', 'click', function(event) {
+                    $el.delegate('.hide', 'click', function(event) {
 
                         event.preventDefault();
 
-                        $text.html(truncatedHtml + showLinkHtml);
-                        $text.css('height', maxHeight + 'px');
-                        $text.trigger('hide');
-                        $text.trigger('toggle');
+                        $el.html(truncatedHtml + showLinkHtml);
+                        $el.css('height', maxHeight + 'px');
+                        $el.trigger('hide');
+                        $el.trigger('toggle');
                     });
                     DEBUG("truncate.js: truncated element with height " + originalHeight + "px > " + realMaxHeight + "px in " + count + " steps.");
                 } else {
-                    DEBUG("truncate.js: skipped processing element with height " + originalHeight + "px < " + realMaxHeight + "px");
+                    DEBUG("How did the plugin get undefined??");
+                    $doppleParent.remove();
+                    $el.html(html);
                 }
 
-                var endTime = new Date();
+            } else {
+                DEBUG("truncate.js: skipped processing element with height " + originalHeight + "px < " + realMaxHeight + "px");
+            }
 
-                DEBUG("truncate.js: took " + (endTime - startTime) + "  ms to execute.");
-            });
+            var endTime = new Date();
+
+            DEBUG("truncate.js: took " + (endTime - startTime) + "  ms to execute.");
         };
+        
+        function Truncate(el, options) {
+            
+            // --- Defaults ---
+            this.defaults = {
+                'maxLines': 1,
+                'lineHeight': 15,
+                'allowedExtraLines': 0,
+                'truncateString': '',
+                'showText': '',
+                'hideText': '',
+                'collapsed': true,
+                'debug': false,
+                'contextParent': null
+            };
+            
+            // extend the default config with specified options
+            this.config = $.extend(this.defaults, options);
+            
+            // store a reference to the jQuery object
+            this.$el = $(el);
+            
+            this.html = this.$el.html();
+        };
+        
+        Truncate.prototype = {
+            
+            options: function(options) {
+                if(typeof options === 'object') {
+                    this.config = $.extend(this.config, options);
+                    return;
+                }
+                return this.config;
+            },
+            
+            update: function(html) {
+                
+                if(typeof html === 'undefined') {
+                    html = this.html;
+                }
+                truncate(this.$el, this.config, html);
+            }
+        };
+
+        $.fn.truncate = function(methodName) {
+
+            var $el = $(this);
+
+            if(typeof methodName === 'undefined' || methodName === null || typeof methodName === 'object') {
+    
+                $el.each(function() {
+                    var $this = $(this);
+                    var plugin = new Truncate($this, methodName);
+                    $this.data('truncatePlugin', plugin)
+                    truncate($this, plugin.config, plugin.html);
+                });
+            }
+            
+            var result;
+            var methodArgs = arguments;
+            
+            if(typeof methodName === 'string') {
+                $el.each(function() {
+                    var plugin = $(this).data('truncatePlugin');    
+                    if(typeof plugin[methodName] === 'function') {
+                        var newResult = plugin[methodName].apply(plugin, Array.prototype.slice.call(methodArgs, 1));
+                        if(typeof result === 'undefined') {
+                            result = newResult;
+                        }
+                    }
+                });
+            }
+            
+            return typeof result !== 'undefined' ? result : this;
+       };
 
     })(jQuery);
 }

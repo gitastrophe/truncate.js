@@ -2,11 +2,12 @@
 <html>
 <head>
     <title>truncate.js - a jQuery plugin for deep-html truncation and toggling</title>
-    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script type="text/javascript" src="http://code.jquery.com/ui/1.9.0/jquery-ui.js"></script>
     <script type="text/javascript" src="../jquery.truncate.js"></script>
     <style type="text/css">
         #demo-container {
-            width: 900px;
+            width: 1200px;
             min-height: 600px;
             margin: auto;
             padding-bottom: 10px;
@@ -15,9 +16,10 @@
             display: inline-block;
             vertical-align: top;
             width: 300px;
-            min-height: 500px;
+            height: 500px;
             border: 1px solid #cccccc;
             padding: 10px;
+            position: relative;
         }
         #demo-config {
             display: inline-block;
@@ -57,6 +59,14 @@
             display: inline-block;
             vertical-align: top;
         }
+        .ui-resizable-handle {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 16px;
+            height: 16px;
+            background-color: gray;
+        }
     </style>
 </head>
 <body>
@@ -95,7 +105,7 @@
         <div id="demo-config">
             <div class="inputContainer">
                 <label for="maxLines">Max Lines</label>
-                <input id="maxLines" type="text" name="maxLines" value="11" />
+                <input id="maxLines" type="text" name="maxLines" value="8" />
             </div>
             <div class="inputContainer">
                 <label for="truncateString">Truncate String</label>
@@ -122,6 +132,72 @@
         </div>
     </div>
     <script type="text/javascript">
+        // Throttles the excution of a function to run at most every set interval.
+        $.throttle = function(interval, throttledFunction) {
+
+            if (interval <= 0) {
+                return throttledFunction;
+            }
+
+            var lastTrigger = 0;
+            var timeout;
+            var lastArguments;
+            return function() {
+
+                lastArguments = arguments;
+                if (timeout) {
+                    return;
+                }
+
+                var context = this;
+                var now = +new Date();
+                var delay = interval - now + lastTrigger;
+
+                if (delay <= 0) {
+                    lastTrigger = now;
+                    throttledFunction.apply(context, lastArguments);
+
+                } else {
+                    timeout = setTimeout(function() {
+                        lastTrigger = now;
+                        timeout = null;
+                        throttledFunction.apply(context, lastArguments);
+                    }, delay);
+                }
+            };
+        };
+        
+        var buildOptions = function() {
+
+            return {
+                'maxLines': parseInt($('#maxLines').val(), 10),
+                'lineHeight': 24,
+                'truncateString': $('#truncateString').val(),
+                'showText': $('#showText').val(),
+                'hideText': $('#hideText').val(),
+                'collapsed': $('#isExpanded:checked').size() > 0 ? false : true,
+                'debug': true,
+                'contextParent': $('#demo-target')
+            }
+        };
+
+        $('#demo-target-container').resizable({
+            'minHeight': 500,
+            'maxHeight': 500,
+            'minWidth': 300,
+            'maxWidth': 600
+        }).live('resize', $.throttle(100, function(event, ui) {
+//            $('#demo-target').remove();
+//            $('#demo-target-container').append($('<div />', { id: 'demo-target' }));
+
+//            var html = $('#demo-source').html();
+//            $('#demo-target').html(html);
+            var $content = $('#demo-target p');
+
+            $content.truncate('options', buildOptions());
+            $content.truncate('update', '<em><strong>Triggered from re-size to [' + ui.size.width + ', ' + ui.size.height + '].</strong></em>' + $('#demo-source p').html());
+        }));
+        
         $('#demo-config #truncate-submit').click(function() {
 
             $('#demo-target').remove();
@@ -130,23 +206,7 @@
             var html = $('#demo-source').html();
             $('#demo-target').html(html);
 
-            var maxLines = parseInt($('#maxLines').val(), 10);
-            var lineHeight = parseInt($('#lineHeight').val(), 10);
-            var truncateString = $('#truncateString').val();
-            var showText = $('#showText').val();
-            var hideText = $('#hideText').val();
-            var collapsed = $('#isExpanded:checked').size() > 0 ? false : true;
-
-            $('#demo-target p').truncate({
-                'maxLines': maxLines,
-                'lineHeight': 24,
-                'truncateString': truncateString,
-                'showText': showText,
-                'hideText': hideText,
-                'collapsed': collapsed,
-                'debug': true,
-                'contextParent': $('#demo-target')
-            });
+            $('#demo-target p').truncate(buildOptions());
         });
 
         var width1 = $('.sample-text-1').width();
