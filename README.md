@@ -10,11 +10,12 @@ a jQuery plugin for deep-HTML truncation and toggling
 
 ## Features
 
-1. Text truncation to a specified number of lines, including text that wraps around other floated elements.
+1. HTML truncation to a specified number of lines, including HTML that wraps around other floated elements.
 2. Deep-HTML truncation with preservation of all non-type3 (text) nodes
 3. Optional specification of a truncation suffix, e.g. …
 4. Toggling between truncated and un-truncated states with configurable hyperlink text
-5. Triggered events when the truncated state of the text is changed
+5. Triggered events when the truncated state of the HTML is changed
 6. O(log n) execution time for n := text length
-7. Pre-truncation analysis is performed on cloned elements to minimize DOM flicker
+7. Pre-truncation and re-truncation analyses are both performed on cloned elements to minimize DOM flicker
 8. Optional console logging of execution time and number of steps for performance analysis
+9. Ability to merge modifications to truncated HTML back into the original HTML
