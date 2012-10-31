@@ -362,8 +362,9 @@ if (typeof jQuery !== 'undefined') {
                         'line-height': options.lineHeight + 'px'
                     });
 
+                    $el.undelegate('truncate');
                     // Delegate handlers to ".show" and ".hide" that swap the original / truncated HTML on click
-                    $el.delegate('.show', 'click', function(event) {
+                    $el.delegate('.show', 'click.truncate', function(event) {
 
                         event.preventDefault();
 
@@ -377,7 +378,7 @@ if (typeof jQuery !== 'undefined') {
                         }
                     });
 
-                    $el.delegate('.hide', 'click', function(event) {
+                    $el.delegate('.hide', 'click.truncate', function(event) {
 
                         event.preventDefault();
 
