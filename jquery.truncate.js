@@ -3,7 +3,7 @@
  * @author Brendan Brelsford
  * @email brendan@perfectsensedigital.com
  *
- * @version 1.0 [2012-03-01]
+ * @version 2.0 [2012-10-31]
  *
  * Usage:
  *
@@ -66,6 +66,9 @@
  *     "contextParent" - A parent DOM element to use as the cloned element for measuring height of the cloned text.  This is necessary
  *                   when the text node can have its text displaced by floated elements inside a common parent.
  *
+ *     "tooltip" - Indicates whether the original TEXT content should be set in a title attribute on the truncated element.  This will
+ *					 strip all HTML for compatibility with HTML attribute syntax.
+ *
  * Methods:
  *
  *      Methods are invoked via $('.selector').truncate(methodName, arguments...)
@@ -109,7 +112,8 @@ if (typeof jQuery !== 'undefined') {
 
         // matching expression to determine the last word in a string.
         var lastWordPattern = /(?:^|\W)\w*$/;
-        var firstWordPattern = /(?:^\W+)\w+/;
+		// first word MUST be suffixed by non-alpha, since usage of this regexp occurs in a spliced segment of the original string
+        var firstWordPattern = /(?:^\w+)(?=\W+)/;
 
         var setNodeText = $.browser.msie ? function(node, text) {
             node.nodeValue = text;
@@ -331,7 +335,7 @@ if (typeof jQuery !== 'undefined') {
                         if(mid === near) {
                             var nextWord = firstWordPattern.exec(textString.substring(avg, far));
                             if(nextWord !== null) {
-                                mid = avg + nextWord.index;
+                                mid = avg + nextWord.index + nextWord[0].length;
                             }
                         }
 
@@ -378,12 +382,19 @@ if (typeof jQuery !== 'undefined') {
                         $el.trigger('hide');
                         $el.trigger('toggle');
                     });
+
+                    if(options.tooltip === true) {
+                        $el.attr('title', $html.text());
+                    }
                     DEBUG("truncate.js: truncated element with height " + originalHeight + "px > " + realMaxHeight + "px in " + count + " steps.");
                     truncationPoint = mid;
 
                 } else {
                     $doppleParent.remove();
                     $el.html(html);
+                    if(options.tooltip === true) {
+                        $el.removeAttr('title');
+                    }
                     truncationPoint = html.length;
                 }
             } else {
@@ -410,7 +421,8 @@ if (typeof jQuery !== 'undefined') {
                 'collapsed': true,
                 'debug': false,
                 'contextParent': null,
-                'maxSteps': 100
+                'maxSteps': 100,
+                'tooltip': false
             };
             
             // extend the default config with specified options
