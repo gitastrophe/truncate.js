@@ -67,7 +67,7 @@
  *                   when the text node can have its text displaced by floated elements inside a common parent.
  *
  *     "tooltip" - Indicates whether the original TEXT content should be set in a title attribute on the truncated element.  This will
- *					 strip all HTML for compatibility with HTML attribute syntax.
+ *                     strip all HTML for compatibility with HTML attribute syntax.
  *
  * Methods:
  *
@@ -112,7 +112,7 @@ if (typeof jQuery !== 'undefined') {
 
         // matching expression to determine the last word in a string.
         var lastWordPattern = /(?:^|\W)\w*$/;
-		// first word MUST be suffixed by non-alpha, since usage of this regexp occurs in a spliced segment of the original string
+        // first word MUST be suffixed by non-alpha, since usage of this regexp occurs in a spliced segment of the original string
         var firstWordPattern = /(?:^\w+)(?=\W+)/;
 
         var setNodeText = $.browser.msie ? function(node, text) {
@@ -308,6 +308,7 @@ if (typeof jQuery !== 'undefined') {
                 // This second check is for elements that have already been truncated before, because the true "originalHeight"
                 // can only be determined in these cases after the $doppleText has been appended to the DOM
                 if(originalHeight > realMaxHeight) {
+    
                     var textString = $html.text();
                     var near = 0;
                     var far = textString.length;
@@ -371,6 +372,9 @@ if (typeof jQuery !== 'undefined') {
 
                         $el.trigger('show');
                         $el.trigger('toggle');
+                        if(options.tooltip === true) {
+                            $el.removeAttr('title');
+                        }
                     });
 
                     $el.delegate('.hide', 'click', function(event) {
@@ -381,10 +385,13 @@ if (typeof jQuery !== 'undefined') {
                         $el.css('height', maxHeight + 'px');
                         $el.trigger('hide');
                         $el.trigger('toggle');
+                        if(options.tooltip === true) {
+                            $el.attr('title', textString);
+                        }
                     });
 
                     if(options.tooltip === true) {
-                        $el.attr('title', $html.text());
+                        $el.attr('title', textString);
                     }
                     DEBUG("truncate.js: truncated element with height " + originalHeight + "px > " + realMaxHeight + "px in " + count + " steps.");
                     truncationPoint = mid;
