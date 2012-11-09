@@ -294,7 +294,8 @@ if (typeof jQuery !== 'undefined') {
                 });
                 // Enforce the 'line-height' style to ensure that the calculation is correct.
                 $doppleText.css({
-                    'line-height': options.lineHeight + 'px'
+                    'line-height': options.lineHeight + 'px',
+                    'height': 'auto'
                 });
 
                 $contextParent.after($doppleParent);
