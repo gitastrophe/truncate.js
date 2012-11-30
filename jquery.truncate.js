@@ -286,12 +286,21 @@ if (typeof jQuery !== 'undefined') {
                     $doppleParent = $doppleText;
                 }
 
+                var width;
+                if($contextParent.css('-moz-box-sizing') === 'border-box'
+                    || $contextParent.css('-webkit-box-sizing') === 'border-box'
+                    || $contextParent.css('box-sizing') === 'border-box') {
+                    width = $contextParent.outerWidth();
+                } else {
+                    width = $contextParent.width();
+                }
+
                 // Position the clone outside the page but still visibile, so that the browser can accurately detect
                 // its height during the binary search.
                 $doppleParent.css({
-                    position: 'absolute',
-                    left: '-9999px',
-                    width: $contextParent.width()
+                    'position': 'absolute',
+                    'left': '-9999px',
+                    'width': width
                 });
                 // Enforce the 'line-height' style to ensure that the calculation is correct.
                 $doppleText.css({
