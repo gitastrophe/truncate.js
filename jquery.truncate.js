@@ -310,6 +310,8 @@ if (typeof jQuery !== 'undefined') {
 
                 $contextParent.after($doppleParent);
 
+				var originalOverflowY = $doppleText.css('overflow-y');
+
                 // Determine the un-truncated HTML height by measuring the cloned element.  This will work both for initial and
                 // repeat calls to "truncate".
                 var originalHeight = $doppleText.height();
@@ -377,27 +379,73 @@ if (typeof jQuery !== 'undefined') {
 
                         event.preventDefault();
 
-                        $el.html(html + hideLinkHtml);
-                        $el.css('height', 'auto');
+						// fix the height before swapping in full content
 
-                        $el.trigger('show');
-                        $el.trigger('toggle');
-                        if(options.tooltip === true) {
-                            $el.removeAttr('title');
-                        }
+						$el.css({
+							'height': maxHeight + 'px',
+							'overflow-y': 'hidden'
+						});
+						$el.html(html + hideLinkHtml);
+						var $animateDfd = new $.Deferred();
+						$animateDfd.then(function() {
+
+	                        $el.css({
+								'height': 'auto',
+								'overflow-y': originalOverflowY
+							});
+	                        $el.trigger('show');
+	                        $el.trigger('toggle');
+	                        if(options.tooltip === true) {
+	                            $el.removeAttr('title');
+	                        }
+						});
+						
+						if(options.animate === true) {
+							var oldAnimateComplete = options['animateOptions']['complete'];
+							var animateOptions = $.extend(true, options.animateOptions, {
+								'complete': function() {
+									$animateDfd.resolve();
+									oldAnimateComplete.apply(this, Array.prototype.slice.call(arguments, 1));
+								}
+							});
+							$el.animate({
+								'height': originalHeight + 'px'
+							}, animateOptions);
+						} else {
+							$animateDfd.resolve();
+						}
                     });
 
                     $el.delegate('.hide', 'click.truncate', function(event) {
 
                         event.preventDefault();
 
-                        $el.html(truncatedHtml + showLinkHtml);
-                        $el.css('height', maxHeight + 'px');
-                        $el.trigger('hide');
-                        $el.trigger('toggle');
-                        if(options.tooltip === true) {
-                            $el.attr('title', textString);
-                        }
+						$el.css('overflow-y', 'hidden');
+						var $animateDfd = new $.Deferred();
+						$animateDfd.then(function() {
+							$el.css('overflow-y', originalOverflowY);
+	                        $el.html(truncatedHtml + showLinkHtml);
+	                        $el.trigger('hide');
+	                        $el.trigger('toggle');
+	                        if(options.tooltip === true) {
+	                            $el.attr('title', textString);
+	                        }
+						});
+						
+						if(options.animate === true) {
+							var oldAnimateComplete = options['animateOptions']['complete'];
+							var animateOptions = $.extend(true, options.animateOptions, {
+								'complete': function() {
+									$animateDfd.resolve();
+									oldAnimateComplete.apply(this, Array.prototype.slice.call(arguments, 1));
+								}
+							});
+							$el.animate({
+								'height': maxHeight + 'px'
+							}, animateOptions);
+						} else {
+							$animateDfd.resolve();
+						}
                     });
 
                     if(options.tooltip === true) {
@@ -439,11 +487,15 @@ if (typeof jQuery !== 'undefined') {
                 'debug': false,
                 'contextParent': null,
                 'maxSteps': 100,
-                'tooltip': false
+                'tooltip': false,
+				'animate': false,
+				'animateOptions': {
+					'complete': function() { }
+				}
             };
             
             // extend the default config with specified options
-            this.config = $.extend(this.defaults, options);
+            this.config = $.extend(true, this.defaults, options);
             
             // store a reference to the jQuery object
             this.$el = $(el);
@@ -465,7 +517,7 @@ if (typeof jQuery !== 'undefined') {
             
             options: function(options) {
                 if(typeof options === 'object') {
-                    this.config = $.extend(this.config, options);
+                    this.config = $.extend(true, this.config, options);
                     return;
                 }
                 return this.config;
@@ -496,7 +548,7 @@ if (typeof jQuery !== 'undefined') {
                 $el.each(function() {
                     var $this = $(this);
                     var plugin = new Truncate($this, methodName);
-                    $this.data('truncatePlugin', plugin)
+                    $this.data('truncatePlugin', plugin);
                     plugin.lastTruncationPoint = truncate($this, plugin.config, plugin.html);
                     plugin.lastHtmlLength = $this.html().length;
                 });
