@@ -480,7 +480,6 @@ if (typeof jQuery !== 'undefined') {
                 'tooltip': false,
 				'animate': false,
 				'animateOptions': {
-					'duration': 5000,
 					'complete': function() { }
 				}
             };
