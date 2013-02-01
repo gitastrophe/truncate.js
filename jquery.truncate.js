@@ -19,9 +19,14 @@
  *     Events are triggered on the following state changes of the selected element.  No events are triggered
  *     on the initial invocation of the truncate plugin.
  *
- *     "show" - Triggered when full text is shown
- *     "hide" - Triggered when full text is truncated
- *     "toggle" - Triggered both when full text is shown and truncated
+ *     "show" - Triggered when full text is shown.  If options.animate is specified to be true, then this event will fire
+ *                  after the animation has completed.
+ *
+ *     "hide" - Triggered when full text is truncated.  If options.animate is specified to be true, then this event will fire
+ *                  after the animation has completed.
+ *
+ *     "toggle" - Triggered both when full text is shown and truncated.  If options.animate is specified to be true, then this
+ *                  event will fire after the animation has completed.
  *
  * Options:
  *
@@ -35,10 +40,6 @@
  *                  it will be calculated using the CSS value from each selected element.
  *                  Allowed Values: integer > 0
  *                  Default Value: null
- *
- *     "allowedExtraLines" - Target "maxLines", but allow up to this many extra lines if text is long enough.
- *                  Allowed Values: integer >= 0
- *                  Default Value: 0
  *
  *     "truncateString" - Suffix to append to truncated text. e.g. &nbsp;&#8230; (non-breaking space followed by an ellipsis).
  *                  Allowed Values: any string
@@ -55,18 +56,22 @@
  *                  Default Value: ''
  *
  *     "collapsed" - Indicates whether the truncated element should be initially displayed in a full-text or truncated state.
- *                   Allowed Values: true / false
- *                   Default Value: true
+ *                  Allowed Values: true / false
+ *                  Default Value: true
  *
  *     "debug" - Indicates whether messages should be written to console.log including the truncation execution time and
- *                   number of binomal search steps used to truncate the full text.  The usage of console.log in this plugin
- *                   is always safe for inclusion in IE.
+ *                  number of binomal search steps used to truncate the full text.  The usage of console.log in this plugin
+ *                  is always safe for inclusion in IE.
  *
  *     "contextParent" - A parent DOM element to use as the cloned element for measuring height of the cloned text.  This is necessary
- *                   when the text node can have its text displaced by floated elements inside a common parent.
+ *                  when the text node can have its text displaced by floated elements inside a common parent.
  *
  *     "tooltip" - Indicates whether the original TEXT content should be set in a title attribute on the truncated element.  This will
- *                     strip all HTML for compatibility with HTML attribute syntax.
+ *                  strip all HTML for compatibility with HTML attribute syntax.
+ *
+ *     "animate" - Indicates whether the user-initiated transitions between truncated and full text should animate the height.  
+ *
+ *     "animateOptions" - If specified, will be passed into jQuery's $.fn.animate options parameter.
  *
  * Methods:
  *
@@ -226,7 +231,7 @@ if (typeof jQuery !== 'undefined') {
             var showLinkHtml = options.showText !== '' ? ' <a class="show" href="#">' + options.showText + '</a>' : '';
             var hideLinkHtml = options.hideText !== '' ? ' <a class="hide" href="#">' + options.hideText + '</a>' : '';
             var maxHeight = options.maxLines * options.lineHeight;
-            var realMaxHeight = maxHeight + options.allowedExtraLines * options.lineHeight;
+            var realMaxHeight = maxHeight + options.lineHeight - 1;
 
             // used to debug the execution time
             var startTime = new Date();
@@ -329,7 +334,7 @@ if (typeof jQuery !== 'undefined') {
                     // Iterate either until the binary search has ended or options.maxSteps has been reached
                     // Three markers are used to implement the binary search: near, mid, and far.  
                     do {
-                        if($doppleText.height() > maxHeight) {
+                        if($doppleText.height() > realMaxHeight) {
                             // If the text is too long, bring in the "far" marker
                             far = mid;
                         } else {
@@ -377,65 +382,65 @@ if (typeof jQuery !== 'undefined') {
 
                         event.preventDefault();
 
-						// fix the height before swapping in full content
+                        // fix the height before swapping in full content
 
-						$el.css({'height': maxHeight + 'px'});
-						$el.html(html + hideLinkHtml);
-						var $animateDfd = new $.Deferred();
-						$animateDfd.then(function() {
+                        $el.css({'height': maxHeight + 'px'});
+                        $el.html(html + hideLinkHtml);
+                        var $animateDfd = new $.Deferred();
+                        $animateDfd.then(function() {
 
-	                        $el.css({'height': 'auto'});
-	                        $el.trigger('show');
-	                        $el.trigger('toggle');
-	                        if(options.tooltip === true) {
-	                            $el.removeAttr('title');
-	                        }
-						});
-						
-						if(options.animate === true) {
-							var oldAnimateComplete = options['animateOptions']['complete'];
-							var animateOptions = $.extend(true, { }, options.animateOptions, {
-								'complete': function() {
-									$animateDfd.resolve();
-									oldAnimateComplete.apply(this, Array.prototype.slice.call(arguments, 1));
-								}
-							});
-							$el.animate({
-								'height': originalHeight + 'px'
-							}, animateOptions);
-						} else {
-							$animateDfd.resolve();
-						}
+                            $el.css({'height': 'auto'});
+                            $el.trigger('show');
+                            $el.trigger('toggle');
+                            if(options.tooltip === true) {
+                                $el.removeAttr('title');
+                            }
+                        });
+                        
+                        if(options.animate === true) {
+                            var oldAnimateComplete = options['animateOptions']['complete'];
+                            var animateOptions = $.extend(true, { }, options.animateOptions, {
+                                'complete': function() {
+                                    $animateDfd.resolve();
+                                    oldAnimateComplete.apply(this, Array.prototype.slice.call(arguments, 1));
+                                }
+                            });
+                            $el.animate({
+                                'height': originalHeight + 'px'
+                            }, animateOptions);
+                        } else {
+                            $animateDfd.resolve();
+                        }
                     });
 
                     $el.delegate('.hide', 'click.truncate', function(event) {
 
                         event.preventDefault();
 
-						var $animateDfd = new $.Deferred();
-						$animateDfd.then(function() {
-	                        $el.html(truncatedHtml + showLinkHtml);
-	                        $el.trigger('hide');
-	                        $el.trigger('toggle');
-	                        if(options.tooltip === true) {
-	                            $el.attr('title', textString);
-	                        }
-						});
-						
-						if(options.animate === true) {
-							var oldAnimateComplete = options['animateOptions']['complete'];
-							var animateOptions = $.extend(true, { }, options.animateOptions, {
-								'complete': function() {
-									$animateDfd.resolve();
-									oldAnimateComplete.apply(this, Array.prototype.slice.call(arguments, 1));
-								}
-							});
-							$el.animate({
-								'height': maxHeight + 'px'
-							}, animateOptions);
-						} else {
-							$animateDfd.resolve();
-						}
+                        var $animateDfd = new $.Deferred();
+                        $animateDfd.then(function() {
+                            $el.html(truncatedHtml + showLinkHtml);
+                            $el.trigger('hide');
+                            $el.trigger('toggle');
+                            if(options.tooltip === true) {
+                                $el.attr('title', textString);
+                            }
+                        });
+                        
+                        if(options.animate === true) {
+                            var oldAnimateComplete = options['animateOptions']['complete'];
+                            var animateOptions = $.extend(true, { }, options.animateOptions, {
+                                'complete': function() {
+                                    $animateDfd.resolve();
+                                    oldAnimateComplete.apply(this, Array.prototype.slice.call(arguments, 1));
+                                }
+                            });
+                            $el.animate({
+                                'height': maxHeight + 'px'
+                            }, animateOptions);
+                        } else {
+                            $animateDfd.resolve();
+                        }
                     });
 
                     if(options.tooltip === true) {
@@ -469,7 +474,6 @@ if (typeof jQuery !== 'undefined') {
             this.defaults = {
                 'maxLines': 1,
                 'lineHeight': null,
-                'allowedExtraLines': 0,
                 'truncateString': '',
                 'showText': '',
                 'hideText': '',
@@ -478,10 +482,10 @@ if (typeof jQuery !== 'undefined') {
                 'contextParent': null,
                 'maxSteps': 100,
                 'tooltip': false,
-				'animate': false,
-				'animateOptions': {
-					'complete': function() { }
-				}
+                'animate': false,
+                'animateOptions': {
+                    'complete': function() { }
+                }
             };
             
             // extend the default config with specified options
