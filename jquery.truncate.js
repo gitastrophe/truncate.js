@@ -1,5 +1,5 @@
 /*
- * jQuery truncate plugin, version 2.0 [2012-10-31]
+ * jQuery truncate plugin, version 3.0 [2012-02-04]
  * Copyright 2012, Perfect Sense Digital LLC
  * Author: Brendan Brelsford [brendanb@gmail.com]
  * Licensed under the MIT license [http://opensource.org/licenses/MIT]
