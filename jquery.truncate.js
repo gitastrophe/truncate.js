@@ -62,16 +62,26 @@
  *     "debug" - Indicates whether messages should be written to console.log including the truncation execution time and
  *                  number of binomal search steps used to truncate the full text.  The usage of console.log in this plugin
  *                  is always safe for inclusion in IE.
+ *                  Allowed Values: true / false
+ *                  Default Value: false
  *
  *     "contextParent" - A parent DOM element to use as the cloned element for measuring height of the cloned text.  This is necessary
  *                  when the text node can have its text displaced by floated elements inside a common parent.
+ *                  Allowed Values: jQuery object
+ *                  Default Value: null
  *
  *     "tooltip" - Indicates whether the original TEXT content should be set in a title attribute on the truncated element.  This will
  *                  strip all HTML for compatibility with HTML attribute syntax.
+ *                  Allowed Values: true / false
+ *                  Default Value: false
  *
  *     "animate" - Indicates whether the user-initiated transitions between truncated and full text should animate the height.  
+ *                  Allowed Values: true / false
+ *                  Default Value: false
  *
  *     "animateOptions" - If specified, will be passed into jQuery's $.fn.animate options parameter.
+ *                  Allowed Values: object
+ *                  Default Value: empty object
  *
  * Methods:
  *
