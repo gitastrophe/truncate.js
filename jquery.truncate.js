@@ -370,10 +370,10 @@ if (typeof jQuery !== 'undefined') {
                         if(mid === near) {
                             var nextWord = firstWordPattern.exec(textString.substring(avg, far));
                             if(nextWord !== null) {
-								var nextWordAt = avg + nextWord.index + nextWord[0].length;
-								if(nextWordAt !== far) {
-									mid = nextWordAt;
-								}
+                                var nextWordAt = avg + nextWord.index + nextWord[0].length;
+                                if(nextWordAt !== far) {
+                                    mid = nextWordAt;
+                                }
                             }
                         }
 
