@@ -125,9 +125,9 @@ if (typeof jQuery !== 'undefined') {
     (function($) {
 
         // matching expression to determine the last word in a string.
-        var lastWordPattern = /(?:^|\W)\w*$/;
+        var lastWordPattern = /(?:^|\W*)\w*$/;
         // first word MUST be suffixed by non-alpha, since usage of this regexp occurs in a spliced segment of the original string
-        var firstWordPattern = /(?:^\w+)(?=\W+)/;
+        var firstWordPattern = /(?:\w+)(?=\W+|$)/;
 
         var setNodeText = $.browser.msie ? function(node, text) {
             node.nodeValue = text;
@@ -222,6 +222,16 @@ if (typeof jQuery !== 'undefined') {
             }
 
             return $html.html();
+        };
+
+        var closestBlockLevelAncestor = function($el) {
+            var $parent = $el.parent();
+            while(typeof $parent !== 'undefined' && $parent.size() > 0) {
+                if('inline' !== $parent.css('display')) {
+                    return $parent;
+                }
+            }
+            return null;
         };
 
         // define main workhorse method, "truncate" to be used both on the initial call and on subsequent invocations of the "update" method
@@ -360,7 +370,10 @@ if (typeof jQuery !== 'undefined') {
                         if(mid === near) {
                             var nextWord = firstWordPattern.exec(textString.substring(avg, far));
                             if(nextWord !== null) {
-                                mid = avg + nextWord.index + nextWord[0].length;
+								var nextWordAt = avg + nextWord.index + nextWord[0].length;
+								if(nextWordAt !== far) {
+									mid = nextWordAt;
+								}
                             }
                         }
 
@@ -368,7 +381,7 @@ if (typeof jQuery !== 'undefined') {
                         truncatedHtml = getHtmlUntilTextOffset(html, mid, options.truncateString);
                         $doppleText.html(truncatedHtml + showLinkHtml);
                         count++;
-                    } while((count < options.maxSteps) && (mid > near));
+                    } while((count < options.maxSteps) && (mid > near) && (mid < far));
 
                     // truncatedHtml is already stored, so remove the cloned element
                     $doppleParent.remove();
@@ -510,6 +523,14 @@ if (typeof jQuery !== 'undefined') {
                     this.config['lineHeight'] = empiricalLineHeight;
                 } else {
                     throw new Error("No \"lineHeight\" parameter was specified and none could be calculated.");
+                }
+            }
+
+            if('inline' === this.$el.css('display')) {
+                if(this.config['contextParent'] === null) {
+                    this.config['contextParent'] = closestBlockLevelAncestor(this.$el);
+                } else if('inline' === this.config['contextParent'].css('display')) {
+                    this.config['contextParent'] = closestBlockLevelAncestor(this.config['contextParent']);
                 }
             }
             
