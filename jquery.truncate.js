@@ -45,9 +45,16 @@
  *                  Allowed Values: any string
  *                  Default Value: ''
  *
+ *     "truncateAfterLinks" - Indicates whether options.truncateString should be appended after anchor tags when the truncation
+ *                  point occurs inside an anchor tag.  Since the truncateString is not part of the original anchor text, it is
+ *                  desirable to exclude it from the anchor tag.  In cases where anchor tags display as block, however, this can
+ *                  cause the truncateString to display on a line below the anchor tag.
+ *                  Allowed Values: true / false
+ *                  Default Value: true
+ *
  *     "showText" - If specified, will be shown as a hyperlink appended to the truncated text.  When clicked, this link
  *                  will toggle the truncated element to its full-text state. e.g. ("more")
- *                  Allowed Values: true / false
+ *                  Allowed Values: any string
  *                  Default Value: ''
  *
  *     "hideText" - If specified, will be shown as a hyperlink appended to the full text.  When clicked, this link will
@@ -136,7 +143,7 @@ if (typeof jQuery !== 'undefined') {
         };
 
         // defines a utility function to splice HTML at a text offset
-        var getHtmlUntilTextOffset = function(html, offset, truncateString) {
+        var getHtmlUntilTextOffset = function(html, offset, truncateString, truncateAfterLinks) {
 
             var queue = [];
             var $html = $('<div/>');
@@ -181,7 +188,7 @@ if (typeof jQuery !== 'undefined') {
                         setNodeText(node, nodeText.substring(0, lastWordOffset));
 
                         if(typeof truncateString !== 'undefined') {
-                            if(!($nodeParent.is('a'))) {
+                            if(!($nodeParent.is('a')) || truncateAfterLinks === false) {
                                 $nodeParent.append(truncateString);
                             } else {
                                 $nodeParent.parent().append(truncateString);
@@ -218,6 +225,10 @@ if (typeof jQuery !== 'undefined') {
 
                     // append $node to $html with children.  if children were detached above, then this is an empty node
                     queueItem.$parent.append($node);
+                }
+
+                if(textLen === offset) {
+                    queueItem.$parent.append(truncateString);
                 }
             }
 
@@ -378,7 +389,7 @@ if (typeof jQuery !== 'undefined') {
                         }
 
                         // Re-truncate the original HTML up to "mid" and put it into the cloned element
-                        truncatedHtml = getHtmlUntilTextOffset(html, mid, options.truncateString);
+                        truncatedHtml = getHtmlUntilTextOffset(html, mid, options.truncateString, options.truncateAfterLinks);
                         $doppleText.html(truncatedHtml + showLinkHtml);
                         count++;
                     } while((count < options.maxSteps) && (mid > near) && (mid < far));
@@ -498,6 +509,7 @@ if (typeof jQuery !== 'undefined') {
                 'maxLines': 1,
                 'lineHeight': null,
                 'truncateString': '',
+                'truncateAfterLinks': true,
                 'showText': '',
                 'hideText': '',
                 'collapsed': true,
