@@ -136,7 +136,8 @@ if (typeof jQuery !== 'undefined') {
         // first word MUST be suffixed by non-alpha, since usage of this regexp occurs in a spliced segment of the original string
         var firstWordPattern = /(?:\w+)(?=\W+|$)/;
 
-        var setNodeText = $.browser.msie ? function(node, text) {
+        // define setNodeText differently for Internet Explorer
+        var setNodeText = /msie/.exec(navigator.userAgent) !== null ? function(node, text) {
             node.nodeValue = text;
         } : function(node, text) {
             node.textContent = text;
