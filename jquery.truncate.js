@@ -137,7 +137,7 @@ if (typeof jQuery !== 'undefined') {
         var firstWordPattern = /(?:\w+)(?=\W+|$)/;
 
         // define setNodeText differently for Internet Explorer
-        var setNodeText = /msie/.exec(navigator.userAgent) !== null ? function(node, text) {
+        var setNodeText = /msie/i.exec(navigator.userAgent) !== null ? function(node, text) {
             node.nodeValue = text;
         } : function(node, text) {
             node.textContent = text;
