@@ -242,6 +242,7 @@ if (typeof jQuery !== 'undefined') {
                 if('inline' !== $parent.css('display')) {
                     return $parent;
                 }
+                $parent = $parent.parent();
             }
             return null;
         };
