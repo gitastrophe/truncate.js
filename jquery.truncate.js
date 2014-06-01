@@ -130,13 +130,14 @@
 
 if (typeof jQuery !== 'undefined') {
     (function($) {
+        var cumulativeExecutionTime = 0;
 
         // matching expression to determine the last word in a string.
         var lastWordPattern = /(?:^|\W*)\w*$/;
         // first word MUST be suffixed by non-alpha, since usage of this regexp occurs in a spliced segment of the original string
         var firstWordPattern = /(?:\w+)(?=\W+|$)/;
 
-        // define setNodeText differently for Internet Explorer
+        // define "setNodeText" differently for Internet Explorer
         var setNodeText = /msie/i.exec(navigator.userAgent) !== null ? function(node, text) {
             node.nodeValue = text;
         } : function(node, text) {
@@ -242,6 +243,7 @@ if (typeof jQuery !== 'undefined') {
                 if('inline' !== $parent.css('display')) {
                     return $parent;
                 }
+                $parent = $parent.parent();
             }
             return null;
         };
@@ -251,11 +253,35 @@ if (typeof jQuery !== 'undefined') {
 
             // declare variable to store response value - the char offset at which truncation occurred
             var truncationPoint = null;
-            
+
             // define DEBUG function specific to each instance
-            var DEBUG = function(msg) {
-                if((options.debug === true) && (typeof console !== 'undefined')) {
-                    console.log(msg);
+            var DEBUG = function() {
+
+                var isDebug = window.location.hash.indexOf("_debugTruncate") !== -1;
+                if((isDebug || options.debug === true) && typeof console !== 'undefined') {
+                    if(/msie/i.exec(navigator.userAgent) !== null) {
+                        var output = "";
+                        var i;
+                        for(i = 0; i < arguments.length; i+= 1) {
+                            if(output.length > 0) {
+                                output += ", ";
+                            }
+                            if(typeof arguments[i] === 'function') {
+                                output += "[function]";
+                            } else if(typeof arguments[i] === 'object' && typeof JSON === 'object' && typeof JSON.stringify === 'function') {
+                                output += JSON.stringify(arguments[i]);
+                            } else {
+                                output += arguments[i].toString();
+                            }
+                        }
+                        console.log(output);
+                    } else {
+                        try {
+                            console.log.apply(null, arguments);
+                        } catch(e) {
+                            console.log(arguments);
+                        }
+                    }
                 }
             };
 
@@ -316,7 +342,7 @@ if (typeof jQuery !== 'undefined') {
                     // html, passed as a parameter to this method.
                     $doppleText.html(html);
                 } else {
-    
+
                     $doppleText = $el.clone();
                     // Always reset the html of the clone (see directly above)
                     $doppleText.html(html);
@@ -336,8 +362,10 @@ if (typeof jQuery !== 'undefined') {
                 // its height during the binary search.
                 $doppleParent.css({
                     'position': 'absolute',
-                    'left': '-9999px',
-                    'width': width
+                    'left': '0',
+                    'top': '0',
+                    'visibility': 'hidden',
+                    'max-width': width // set max-width instead of width, because setting width directly can result in small display deviations
                 });
                 // Enforce the 'line-height' style to ensure that the calculation is correct.
                 $doppleText.css({
@@ -350,11 +378,11 @@ if (typeof jQuery !== 'undefined') {
                 // Determine the un-truncated HTML height by measuring the cloned element.  This will work both for initial and
                 // repeat calls to "truncate".
                 var originalHeight = $doppleText.height();
-                
+
                 // This second check is for elements that have already been truncated before, because the true "originalHeight"
                 // can only be determined in these cases after the $doppleText has been appended to the DOM
                 if(originalHeight > realMaxHeight) {
-    
+
                     var textString = $html.text();
                     var near = 0;
                     var far = textString.length;
@@ -364,7 +392,7 @@ if (typeof jQuery !== 'undefined') {
                     var count = 0;
 
                     // Iterate either until the binary search has ended or options.maxSteps has been reached
-                    // Three markers are used to implement the binary search: near, mid, and far.  
+                    // Three markers are used to implement the binary search: near, mid, and far.
                     do {
                         if($doppleText.height() > realMaxHeight) {
                             // If the text is too long, bring in the "far" marker
@@ -373,7 +401,7 @@ if (typeof jQuery !== 'undefined') {
                             // If the text is too short, push out the "near" marker
                             near = mid;
                         }
-                        
+
                         // re-calculate the new mid to be the closest word boundary before the numerical midpoint of near & far
                         var avg = Math.floor((far + near) / 2);
                         mid = lastWordPattern.exec(textString.substring(0, avg)).index;
@@ -431,7 +459,7 @@ if (typeof jQuery !== 'undefined') {
                                 $el.removeAttr('title');
                             }
                         });
-                        
+
                         if(options.animate === true) {
                             var oldAnimateComplete = options['animateOptions']['complete'];
                             var animateOptions = $.extend(true, { }, options.animateOptions, {
@@ -461,7 +489,7 @@ if (typeof jQuery !== 'undefined') {
                                 $el.attr('title', textString);
                             }
                         });
-                        
+
                         if(options.animate === true) {
                             var oldAnimateComplete = options['animateOptions']['complete'];
                             var animateOptions = $.extend(true, { }, options.animateOptions, {
@@ -499,12 +527,15 @@ if (typeof jQuery !== 'undefined') {
 
             var endTime = new Date();
 
+            cumulativeExecutionTime += (endTime - startTime);
             DEBUG("truncate.js: took " + (endTime - startTime) + "  ms to execute.");
+            DEBUG("truncate.js: ", $el);
+            DEBUG("truncate.js: cumulative execution time " + cumulativeExecutionTime + " ms");
             return truncationPoint;
         };
-        
+
         function Truncate(el, options) {
-            
+
             // --- Defaults ---
             this.defaults = {
                 'maxLines': 1,
@@ -523,15 +554,15 @@ if (typeof jQuery !== 'undefined') {
                     'complete': function() { }
                 }
             };
-            
+
             // extend the default config with specified options
             this.config = $.extend(true, { }, this.defaults, options);
-            
+
             // store a reference to the jQuery object
             this.$el = $(el);
 
             if(this.config['lineHeight'] === null) {
-                var empiricalLineHeight = parseInt(this.$el.css('line-height'), 10);
+                var empiricalLineHeight = parseFloat(this.$el.css('line-height'));
                 if(typeof empiricalLineHeight === 'number' && !isNaN(empiricalLineHeight)) {
                     this.config['lineHeight'] = empiricalLineHeight;
                 } else {
@@ -546,13 +577,13 @@ if (typeof jQuery !== 'undefined') {
                     this.config['contextParent'] = closestBlockLevelAncestor(this.config['contextParent']);
                 }
             }
-            
+
             this.html = this.$el.html();
             this.lastTruncationPoint = null;
-        };
-        
+        }
+
         Truncate.prototype = {
-            
+
             options: function(options) {
                 if(typeof options === 'object') {
                     this.config = $.extend(true, { }, this.config, options);
@@ -560,9 +591,9 @@ if (typeof jQuery !== 'undefined') {
                 }
                 return this.config;
             },
-            
+
             update: function(updatedHtml) {
-                
+
                 if(typeof updatedHtml === 'undefined') {
                     var elementHtml = this.$el.html();
                     if(typeof this.lastHtmlLength !== 'undefined' && elementHtml.length !== this.lastHtmlLength) {
@@ -574,6 +605,10 @@ if (typeof jQuery !== 'undefined') {
                 }
                 this.lastTruncationPoint = truncate(this.$el, this.config, this.html);
                 this.lastHtmlLength = this.$el.html().length;
+            },
+
+            'getOriginalHtml': function() {
+                return this.html;
             }
         };
 
@@ -582,7 +617,7 @@ if (typeof jQuery !== 'undefined') {
             var $el = $(this);
 
             if(typeof methodName === 'undefined' || methodName === null || typeof methodName === 'object') {
-    
+
                 $el.each(function() {
                     var $this = $(this);
                     var plugin = new Truncate($this, methodName);
@@ -591,13 +626,13 @@ if (typeof jQuery !== 'undefined') {
                     plugin.lastHtmlLength = $this.html().length;
                 });
             }
-            
+
             var result;
             var methodArgs = arguments;
-            
+
             if(typeof methodName === 'string') {
                 $el.each(function() {
-                    var plugin = $(this).data('truncatePlugin');    
+                    var plugin = $(this).data('truncatePlugin');
                     if(typeof plugin[methodName] === 'function') {
                         var newResult = plugin[methodName].apply(plugin, Array.prototype.slice.call(methodArgs, 1));
                         if(typeof result === 'undefined') {
@@ -606,9 +641,8 @@ if (typeof jQuery !== 'undefined') {
                     }
                 });
             }
-            
-            return typeof result !== 'undefined' ? result : this;
-       };
 
+            return typeof result !== 'undefined' ? result : this;
+        };
     })(jQuery);
 }
