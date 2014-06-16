@@ -562,8 +562,16 @@ if (typeof jQuery !== 'undefined') {
             this.$el = $(el);
 
             if(this.config['lineHeight'] === null) {
-                var empiricalLineHeight = parseFloat(this.$el.css('line-height'));
-                if(typeof empiricalLineHeight === 'number' && !isNaN(empiricalLineHeight)) {
+                var empiricalLineHeight = NaN;
+                if("normal" === this.$el.css('line-height')) {
+
+                    // Translate "normal" to a numeric pixel line-height: http://stackoverflow.com/questions/3614323/jquery-css-line-height-of-normal-px
+                    empiricalLineHeight = 1.14 * parseFloat(this.$el.css('font-size'))
+                } else {
+                    empiricalLineHeight = parseFloat(this.$el.css('line-height'));
+                }
+
+                if(!isNaN(empiricalLineHeight)) {
                     this.config['lineHeight'] = empiricalLineHeight;
                 } else {
                     throw new Error("No \"lineHeight\" parameter was specified and none could be calculated.");
