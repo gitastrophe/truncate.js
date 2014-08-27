@@ -566,7 +566,10 @@ if (typeof jQuery !== 'undefined') {
                 if("normal" === this.$el.css('line-height')) {
 
                     // Translate "normal" to a numeric pixel line-height: http://stackoverflow.com/questions/3614323/jquery-css-line-height-of-normal-px
-                    empiricalLineHeight = 1.14 * parseFloat(this.$el.css('font-size'))
+                    empiricalLineHeight = 1.14 * parseFloat(this.$el.css('font-size'));
+                }
+                else if (this.$el.css('line-height').indexOf('px') === -1) {
+                    empiricalLineHeight = this.$el.css('line-height') * parseFloat(this.$el.css('font-size'));
                 } else {
                     empiricalLineHeight = parseFloat(this.$el.css('line-height'));
                 }
