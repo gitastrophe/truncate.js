@@ -199,8 +199,6 @@ if (typeof jQuery !== 'undefined') {
 			
 			var delta = Math.abs(calculatedLineHeight * 4 - $detector.height());
 			
-			console.log("delta: " + delta);
-			
 			if(delta === 0) {
 				return;
 			}
