@@ -154,6 +154,65 @@ if (typeof jQuery !== 'undefined') {
         } : function(node, text) {
             node.textContent = text;
         };
+		
+		var browserFloorsLineHeight = false;
+		var browserRoundsBoxHeight = false;
+		
+		var calculateHeight = function(maxLines, lineHeight) {
+			
+			var rawHeight = maxLines * (browserFloorsLineHeight === true ? Math.floor(lineHeight) : lineHeight);
+			
+			return browserRoundsBoxHeight === true ? Math.round(rawHeight) : (rawHeight);
+		};
+		
+		var calculateMaxHeight = function(maxLines, lineHeight) {
+			
+			var rawHeight = (maxLines + 1) * (browserFloorsLineHeight === true ? Math.floor(lineHeight) : lineHeight) - 1;
+			
+			return browserRoundsBoxHeight === true ? Math.round(rawHeight) : (rawHeight);
+		};
+		
+		var setCustomBrowserBehavior = function() {
+			
+			var LINE_ROUND_UP_HEIGHT = 1.43125,
+				LINE_ROUND_DOWN_HEIGHT = 1.38125;
+			
+			var $detector = $('<div />', {
+				'id': 'truncate-detect-height-method',
+				'text': '. . . .' // two lines of text
+			});
+			
+			$detector.css({
+				'line-height': LINE_ROUND_UP_HEIGHT,
+				'font-size': '16px',
+				'font-family': 'sans-serif',
+				'width': 0,
+				'position': 'absolute',
+				'top': 0,
+				'left': 0,
+				'visibility': 'hidden'
+			});
+			
+			$('body').append($detector);
+			
+			var calculatedLineHeight = parseFloat($detector.css('line-height'));
+			
+			var delta = Math.abs(calculatedLineHeight * 4 - $detector.height());
+			
+			console.log("delta: " + delta);
+			
+			if(delta === 0) {
+				return;
+			}
+			
+			if(delta < 1) {
+				browserRoundsBoxHeight = true;
+			} else if(delta > 1) {
+				browserFloorsLineHeight = true;
+			}
+			
+			setCustomBrowserBehavior = function() { };
+		};
 
         // defines a utility function to splice HTML at a text offset
         var getHtmlUntilTextOffset = function(html, offset, truncateString, truncateAfterLinks) {
@@ -295,12 +354,14 @@ if (typeof jQuery !== 'undefined') {
                     }
                 }
             };
+			
+			setCustomBrowserBehavior();
 
             // options-based variables
             var showLinkHtml = options.showText !== '' ? ' <a class="show" href="#">' + options.showText + '</a>' : '';
             var hideLinkHtml = options.hideText !== '' ? ' <a class="hide" href="#">' + options.hideText + '</a>' : '';
-            var maxHeight = options.maxLines * options.lineHeight;
-            var realMaxHeight = maxHeight + options.lineHeight - 1;
+            var maxHeight = calculateHeight(options.maxLines, options.lineHeight);
+            var realMaxHeight = calculateMaxHeight(options.maxLines, options.lineHeight);
 
             // used to debug the execution time
             var startTime = new Date();
