@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Truncate.js : a jQuery plugin for deep-HTML truncation and toggling">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Truncate.js</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/gitastrophe/truncate.js">View on GitHub</a>
+
+          <h1 id="project_title">Truncate.js</h1>
+          <h2 id="project_tagline">a jQuery plugin for deep-HTML truncation and toggling</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/gitastrophe/truncate.js/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/gitastrophe/truncate.js/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h2>
+<a id="why-use-javascript-to-truncate-text" class="anchor" href="#why-use-javascript-to-truncate-text" aria-hidden="true"><span class="octicon octicon-link"></span></a>Why use JavaScript to truncate text?</h2>
+
+<ol>
+<li>Server-side text truncation based on character counts is always incorrect. The width of the character string "iiiii" is approximately 58% less than the width of "MMMMM" unless a monospace font is used. </li>
+<li>The CSS3 property "text-overflow" can only truncate a single line of text, and is not supported by IE7 and below.</li>
+</ol>
+
+<h2>
+<a id="features" class="anchor" href="#features" aria-hidden="true"><span class="octicon octicon-link"></span></a>Features</h2>
+
+<ol>
+<li>HTML truncation to a specified number of lines, including HTML that wraps around other floated elements.</li>
+<li>Deep-HTML truncation with preservation of all non-type3 (text) nodes</li>
+<li>Optional specification of a truncation suffix, e.g. …</li>
+<li>Toggling between truncated and un-truncated states with configurable hyperlink text</li>
+<li>Triggered events when the truncated state of the HTML is changed</li>
+<li>O(log n) execution time for n := text length</li>
+<li>Pre-truncation and re-truncation analyses are both performed on cloned elements to minimize DOM flicker</li>
+<li>Optional console logging of execution time and number of steps for performance analysis</li>
+<li>Ability to merge modifications to truncated HTML back into the original HTML</li>
+</ol>
+
+<h2>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Usage</h2>
+
+<p>Invocation</p>
+
+<pre><code>$('.selector').truncate(options);
+</code></pre>
+
+<p>Event Binding (after invocation)</p>
+
+<pre><code>$('.selector').truncate('bind', 'show', function(){
+    // do something when full text is shown
+});
+</code></pre>
+
+<h3>
+<a id="events" class="anchor" href="#events" aria-hidden="true"><span class="octicon octicon-link"></span></a>Events</h3>
+
+<p>Events are triggered on the following state changes of the selected element.  No events are triggered
+on the initial invocation of the truncate plugin.  </p>
+
+<hr>
+
+<p><code>show</code> Triggered when full text is shown.  If <a href="#options_animate">options.animate</a> is specified to be true, then this event will fire after the animation has completed.  </p>
+
+<hr>
+
+<p><code>hide</code> Triggered when full text is truncated.  If <a href="#options_animate">options.animate</a> is specified to be true, then this event will fire after the animation has completed.  </p>
+
+<hr>
+
+<p><code>toggle</code> Triggered both when full text is shown and truncated.  If <a href="#options_animate">options.animate</a> is specified to be true, then this event will fire after the animation has completed.</p>
+
+<h3>
+<a id="options" class="anchor" href="#options" aria-hidden="true"><span class="octicon octicon-link"></span></a>Options</h3>
+
+<p>Options are passed as a flat javascript object with the following allowed keys:</p>
+
+<hr>
+
+<p><a name="options_maxLines"></a>
+The maximum number of lines to display when the element is truncated.  </p>
+
+<pre><code>maxLines
+
+    Allowed Values: integer &gt; 0
+    Default Value: 1
+</code></pre>
+
+<hr>
+
+<p><a name="options_lineHeight"></a>
+The line-height value that should be used to calculate the vertical truncation point.  If unspecified, it will be calculated using the CSS value from each selected element.</p>
+
+<pre><code>lineHeight
+
+    Allowed Values: integer &gt; 0
+    Default Value: null
+</code></pre>
+
+<hr>
+
+<p><a name="options_truncateString"></a>
+Suffix to append to truncated text. e.g.  … (non-breaking space followed by an ellipsis).
+    truncateString</p>
+
+<pre><code>    Allowed Values: any string
+    Default Value: ''
+</code></pre>
+
+<hr>
+
+<p><a name="options_truncateAfterLinks"></a>
+Indicates whether <a href="#options_truncateString">options.truncateString</a> should be appended after anchor tags when the truncation point occurs inside an anchor tag.  Since the truncateString is not part of the original anchor text, it is desirable to exclude it from the anchor tag.  In cases where anchor tags display as block, however, this can cause the truncateString to display on a line below the anchor tag.</p>
+
+<pre><code>truncateAfterLinks
+
+    Allowed Values: true / false
+    Default Value: true
+</code></pre>
+
+<hr>
+
+<p><a name="options_showText"></a>
+If specified, will be shown as a hyperlink appended to the truncated text.  When clicked, this link will toggle the truncated element to its full-text state. e.g. ("more")</p>
+
+<pre><code>showText
+
+    Allowed Values: any string
+    Default Value: ''
+</code></pre>
+
+<hr>
+
+<p><a name="options_hideText"></a>
+If specified, will be shown as a hyperlink appended to the full text.  When clicked, this link will toggle the full-text element to its truncated state.  e.g. ("less")</p>
+
+<pre><code>hideText 
+
+    Allowed Values: any string
+    Default Value: ''
+</code></pre>
+
+<hr>
+
+<p><a name="options_collapsed"></a>
+Indicates whether the truncated element should be initially displayed in a full-text or truncated state.</p>
+
+<pre><code>collapsed
+
+    Allowed Values: true / false
+    Default Value: true
+</code></pre>
+
+<hr>
+
+<p><a name="options_debug"></a>
+Indicates whether messages should be written to console.log including the truncation execution time and number of binary search steps used to truncate the full text.  The usage of console.log in this plugin is always safe for inclusion in IE.</p>
+
+<pre><code>debug
+
+    Allowed Values: true / false
+    Default Value: false
+</code></pre>
+
+<hr>
+
+<p><a name="options_contextParent"></a>
+A parent DOM element to use as the cloned element for measuring height of the cloned text.  This is necessary when the text node can have its text displaced by floated elements inside a common parent.</p>
+
+<pre><code>contextParent
+
+    Allowed Values: jQuery object
+    Default Value: null
+</code></pre>
+
+<hr>
+
+<p><a name="options_tooltip"></a>
+Indicates whether the original TEXT content should be set in a title attribute on the truncated element.  This will strip all HTML for compatibility with HTML attribute syntax.</p>
+
+<pre><code>tooltip
+
+    Allowed Values: true / false
+    Default Value: false
+</code></pre>
+
+<hr>
+
+<p><a name="options_animate"></a>
+Indicates whether the user-initiated transitions between truncated and full text should animate the height.</p>
+
+<pre><code>animate
+
+    Allowed Values: true / false
+    Default Value: false
+</code></pre>
+
+<hr>
+
+<p><a name="options_animateOptions"></a>
+If specified, will be passed into jQuery's $.fn.animate options parameter.</p>
+
+<pre><code>animateOptions
+
+    Allowed Values: object
+    Default Value: empty object
+</code></pre>
+
+<h3>
+<a id="methods" class="anchor" href="#methods" aria-hidden="true"><span class="octicon octicon-link"></span></a>Methods</h3>
+
+<p>Methods are invoked via $('.selector').truncate(methodName, arguments...)</p>
+
+<hr>
+
+<p><code>options</code> Pass an object argument to reset the options.  This does not immediately trigger an updated truncation.</p>
+
+<hr>
+
+<p><code>update</code> Takes an optional second argument to pass new HTML.  With or without the argument, the original truncated element will be re-truncated.  This is useful to hook into a callback when the truncated element can be subject to re-sizing (i.e. responsive design).  If no HTML is passed, but the contents of the truncated text have been modified, the modified text will be used in place of the original.</p>
+
+<h3>
+<a id="examples" class="anchor" href="#examples" aria-hidden="true"><span class="octicon octicon-link"></span></a>Examples</h3>
+
+<p>Truncate to 3 lines with a trailing ellipsis, "Read More" text when collapsed, and no hide text.</p>
+
+<pre><code>$('.selector').truncate({
+    'maxLines': 3,
+    'truncateString': '&amp;nbsp;&amp;#8230;',
+    'showText': 'Read More'
+});
+</code></pre>
+
+<hr>
+
+<p>Truncate to 3 lines with a trailing ellipsis, relative to a context parent that includes a floated image.</p>
+
+<pre><code>var $el = $('.selector');
+var $contextParent = $el.closest('.parent-selector');
+
+$('.selector').truncate({
+    'maxLines': 3,
+    'truncateString': '&amp;nbsp;&amp;#8230;',
+    'contextParent': $contextParent
+});
+</code></pre>
+
+<h3>
+<a id="known-issues" class="anchor" href="#known-issues" aria-hidden="true"><span class="octicon octicon-link"></span></a>Known Issues</h3>
+
+<ul>
+<li><p>Truncating HTML without consideration for the timing of web font loading will produce incorrectly truncated text. In cases where web fonts are used, either delay truncation until after the web fonts are loaded or call the "update" method after the web fonts have loaded.  <a href="https://github.com/patrickmarabeas/jQuery-FontSpy.js">FontSpy</a> is a good plugin for detecting when an external font has been loaded.  It is based on <a href="https://remysharp.com/2008/07/08/how-to-detect-if-a-font-is-installed-only-using-javascript">Remy Sharp's usage of Comic Sans for determining whether a named font is loaded</a></p></li>
+<li><p>The "update" method with 0 parameters will fail to recognize a change in the truncated HTML if the HTML length is the same as before the change was made.</p></li>
+</ul>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Truncate.js maintained by <a href="https://github.com/gitastrophe">gitastrophe</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
