@@ -1,6 +1,6 @@
 /*
- * jQuery truncate plugin, version 3.0 [2012-02-04]
- * Copyright 2012, Perfect Sense Digital LLC
+ * jQuery truncate plugin, version 3.0 [2015-02-04]
+ * Copyright 2015, Perfect Sense Digital LLC
  * Author: Brendan Brelsford [brendanb@gmail.com]
  * Licensed under the MIT license [http://opensource.org/licenses/MIT]
  *
@@ -123,6 +123,17 @@
  *     });
  *
  * Known Issues:
+ *
+ *     - Truncating HTML without consideration for the timing of web font loading will produce incorrectly truncated text.
+ *         In cases where web fonts are used, either delay truncation until after the web fonts are loaded or call the
+ *         "update" method after the web fonts have loaded.  A good plugin for detecting when a web font has been loaded is:
+ *
+ *         https://github.com/patrickmarabeas/jQuery-FontSpy.js
+ *
+ *         Which is based on Remy Sharp's usage of Comic Sans for determining whether a named font is loaded:
+ *
+ *         https://remysharp.com/2008/07/08/how-to-detect-if-a-font-is-installed-only-using-javascript
+ *
  *     - The "update" method with 0 parameters will fail to recognize a change in the truncated HTML if the HTML length is
  *         the same as before the change was made.
  */
