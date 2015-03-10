@@ -2,6 +2,9 @@ truncate.js
 ===========
 
 a jQuery plugin for deep-HTML truncation and toggling
+
+<a href="http://gitastrophe.github.io/truncate.js/">View this project on Github Pages</a>
+
 ## Why use JavaScript to truncate text?
 
 1. Server-side text truncation based on character counts is always incorrect. The width of the character string "iiiii" is approximately 58% less than the width of "MMMMM" unless a monospace font is used. 
