@@ -1,7 +1,7 @@
 truncate.js
 ===========
 
-a jQuery plugin for deep-HTML truncation and toggling
+a jQuery plugin for HTML truncation and toggling
 
 <a href="http://gitastrophe.github.io/truncate.js/">View this project on Github Pages</a>
 
