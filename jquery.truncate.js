@@ -62,6 +62,14 @@
  *                  Allowed Values: any string
  *                  Default Value: ''
  *
+ *     "showClass" - CSS class to be used when generating and selecting the clickable link to show the full text.
+ *                  Allowed Values: any string
+ *                  Default Value: 'show'
+ *
+ *     "hideClass" - CSS class to be used when generating and selecting the clickable link to hide the full text.
+ *                  Allowed Values: any string
+ *                  Default Value: 'hide'
+ *
  *     "collapsed" - Indicates whether the truncated element should be initially displayed in a full-text or truncated state.
  *                  Allowed Values: true / false
  *                  Default Value: true
@@ -356,8 +364,8 @@ if (typeof jQuery !== 'undefined') {
 			setCustomBrowserBehavior();
 
             // options-based variables
-            var showLinkHtml = options.showText !== '' ? ' <a class="show" href="#">' + options.showText + '</a>' : '';
-            var hideLinkHtml = options.hideText !== '' ? ' <a class="hide" href="#">' + options.hideText + '</a>' : '';
+            var showLinkHtml = options.showText !== '' ? ' <a class="' + options.showClass + '" href="#">' + options.showText + '</a>' : '';
+            var hideLinkHtml = options.hideText !== '' ? ' <a class="' + options.hideClass + '" href="#">' + options.hideText + '</a>' : '';
             var maxHeight = calculateHeight(options.maxLines, options.lineHeight);
             var realMaxHeight = calculateMaxHeight(options.maxLines, options.lineHeight);
 
@@ -511,7 +519,7 @@ if (typeof jQuery !== 'undefined') {
 
                     $el.undelegate('truncate');
                     // Delegate handlers to ".show" and ".hide" that swap the original / truncated HTML on click
-                    $el.delegate('.show', 'click.truncate', function(event) {
+                    $el.delegate('.' + options.showClass, 'click.truncate', function(event) {
 
                         event.preventDefault();
 
@@ -546,7 +554,7 @@ if (typeof jQuery !== 'undefined') {
                         }
                     });
 
-                    $el.delegate('.hide', 'click.truncate', function(event) {
+                    $el.delegate('.' + options.hideClass, 'click.truncate', function(event) {
 
                         event.preventDefault();
 
@@ -614,6 +622,8 @@ if (typeof jQuery !== 'undefined') {
                 'truncateAfterLinks': true,
                 'showText': '',
                 'hideText': '',
+				'showClass': 'show',
+				'hideClass': 'hide',
                 'collapsed': true,
                 'debug': false,
                 'contextParent': null,
