@@ -170,20 +170,19 @@ if (typeof jQuery !== 'undefined') {
 			
 			var rawHeight = maxLines * (browserFloorsLineHeight === true ? Math.floor(lineHeight) : lineHeight);
 			
-			return browserRoundsBoxHeight === true ? Math.round(rawHeight) : (rawHeight);
+			return browserRoundsBoxHeight === true ? Math.round(rawHeight) : rawHeight;
 		};
 		
 		var calculateMaxHeight = function(maxLines, lineHeight) {
 			
 			var rawHeight = (maxLines + 1) * (browserFloorsLineHeight === true ? Math.floor(lineHeight) : lineHeight) - 1;
 			
-			return browserRoundsBoxHeight === true ? Math.round(rawHeight) : (rawHeight);
+			return browserRoundsBoxHeight === true ? Math.round(rawHeight) : rawHeight;
 		};
 		
 		var setCustomBrowserBehavior = function() {
 			
-			var LINE_ROUND_UP_HEIGHT = 1.43125,
-				LINE_ROUND_DOWN_HEIGHT = 1.38125;
+			var LINE_ROUND_UP_HEIGHT = 1.43125;
 			
 			var $detector = $('<div />', {
 				'id': 'truncate-detect-height-method',
@@ -234,23 +233,24 @@ if (typeof jQuery !== 'undefined') {
             // remove child nodes from this node and push all onto the queue in reverse order (this implements depth-first search).
             var rootChildren = $html.contents().detach();
             var n = 0;
-            for(n = rootChildren.size() - 1; n >= 0; --n) {
+            for(n = rootChildren.size() - 1; n >= 0; n -= 1) {
 
                 queue.push({$parent: $html, node: rootChildren.get(n)});
             }
+			
+			var queueItem, node, $node, nodeTextLen, nodeText, $nodeParent, match, lastWordOffset, children, i;
 
             while((queue.length > 0) && (textLen < offset) && (count < 100)) {
 
-                var queueItem = queue.pop();
-                var node = queueItem.node;
-                var $node = $(node);
-                var nodeTextLen = 0;
-                var nodeText;
+                queueItem = queue.pop();
+                node = queueItem.node;
+                $node = $(node);
+                nodeTextLen = 0;
 
                 // process text nodes distinctly from other node types
                 if(node.nodeType === 3) {
 
-                    var $nodeParent = queueItem.$parent;
+                    $nodeParent = queueItem.$parent;
 
                     // append $node to $html with children.  if children were detached above, then this is an empty node
                     $nodeParent.append($node);
@@ -261,11 +261,11 @@ if (typeof jQuery !== 'undefined') {
                     // if the text node's contents would put textLen above offset, perform truncation
                     if (nodeTextLen > offset - textLen) {
 
-                        var match = lastWordPattern.exec(nodeText.substring(0, offset - textLen));
-                        var lastWordOffset = match.index + match[0].length;
+                        match = lastWordPattern.exec(nodeText.substring(0, offset - textLen));
+                        lastWordOffset = match.index + match[0].length;
                         setNodeText(node, nodeText.substring(0, lastWordOffset));
 
-                        if(typeof truncateString !== 'undefined') {
+                        if(truncateString !== undefined) {
                             if(!($nodeParent.is('a')) || truncateAfterLinks === false) {
                                 $nodeParent.append(truncateString);
                             } else {
@@ -277,9 +277,9 @@ if (typeof jQuery !== 'undefined') {
                         textLen += lastWordOffset;
                         break;
 
-                    } else {
-                        textLen += nodeTextLen;
                     }
+					
+                    textLen += nodeTextLen;
 
                 } else {
 
@@ -290,9 +290,9 @@ if (typeof jQuery !== 'undefined') {
                     if(nodeTextLen > offset - textLen) {
 
                         // remove child nodes from this node and push all onto the queue in reverse order (this implements depth-first search).
-                        var children = $node.contents().detach();
-                        var i = 0;
-                        for(i = children.size() - 1; i >= 0; --i) {
+                        children = $node.contents().detach();
+                        i = 0;
+                        for(i = children.size() - 1; i >= 0; i -= 1) {
 
                             queue.push({$parent: $node, node: children.get(i)});
                         }
@@ -315,7 +315,7 @@ if (typeof jQuery !== 'undefined') {
 
         var closestBlockLevelAncestor = function($el) {
             var $parent = $el.parent();
-            while(typeof $parent !== 'undefined' && $parent.size() > 0) {
+            while($parent !== undefined && $parent.size() > 0) {
                 if('inline' !== $parent.css('display')) {
                     return $parent;
                 }
@@ -334,7 +334,7 @@ if (typeof jQuery !== 'undefined') {
             var DEBUG = function() {
 
                 var isDebug = window.location.hash.indexOf("_debugTruncate") !== -1;
-                if((isDebug || options.debug === true) && typeof console !== 'undefined') {
+                if((isDebug || options.debug === true) && window.console !== undefined) {
                     if(/msie/i.exec(navigator.userAgent) !== null) {
                         var output = "";
                         var i;
@@ -377,7 +377,7 @@ if (typeof jQuery !== 'undefined') {
             $html.html(html);
 
             // proceed if the element has already been truncated, or if its height is larger than the real max height
-            if (typeof $el.data('truncatePlugin') !== 'undefined' || $el.height() > realMaxHeight) {
+            if ($el.data('truncatePlugin') !== undefined || $el.height() > realMaxHeight) {
 
                 // check whether a $parent element was specified for a larger DOM context
                 var $contextParent = (options.contextParent === null || options.contextParent === $el) ? $el : $(options.contextParent);
@@ -409,9 +409,9 @@ if (typeof jQuery !== 'undefined') {
                     // to the specified child index, the cloned element can be found.
                     $doppleParent = $contextParent.clone();
                     $doppleText = $doppleParent;
-                    var i;
-                    for(i = 0; i < childOffsets.length; i++) {
-                        var offset = childOffsets[i];
+                    var i, offset;
+                    for(i = 0; i < childOffsets.length; i += 1) {
+                        offset = childOffsets[i];
                         $doppleText = $doppleText.children().eq(offset);
                     }
 
@@ -468,6 +468,7 @@ if (typeof jQuery !== 'undefined') {
                     var truncatedHtml;
 
                     var count = 0;
+					var avg, nextWord, nextWordAt;
 
                     // Iterate either until the binary search has ended or options.maxSteps has been reached
                     // Three markers are used to implement the binary search: near, mid, and far.
@@ -481,14 +482,14 @@ if (typeof jQuery !== 'undefined') {
                         }
 
                         // re-calculate the new mid to be the closest word boundary before the numerical midpoint of near & far
-                        var avg = Math.floor((far + near) / 2);
+                        avg = Math.floor((far + near) / 2);
                         mid = lastWordPattern.exec(textString.substring(0, avg)).index;
 
                         // if this puts mid equal to near, try the first word pattern after the numerical midpoint of near & far
                         if(mid === near) {
-                            var nextWord = firstWordPattern.exec(textString.substring(avg, far));
+                            nextWord = firstWordPattern.exec(textString.substring(avg, far));
                             if(nextWord !== null) {
-                                var nextWordAt = avg + nextWord.index + nextWord[0].length;
+                                nextWordAt = avg + nextWord.index + nextWord[0].length;
                                 if(nextWordAt !== far) {
                                     mid = nextWordAt;
                                 }
@@ -498,7 +499,7 @@ if (typeof jQuery !== 'undefined') {
                         // Re-truncate the original HTML up to "mid" and put it into the cloned element
                         truncatedHtml = getHtmlUntilTextOffset(html, mid, options.truncateString, options.truncateAfterLinks);
                         $doppleText.html(truncatedHtml + showLinkHtml);
-                        count++;
+                        count += 1;
                     } while((count < options.maxSteps) && (mid > near) && (mid < far));
 
                     // truncatedHtml is already stored, so remove the cloned element
@@ -539,7 +540,7 @@ if (typeof jQuery !== 'undefined') {
                         });
 
                         if(options.animate === true) {
-                            var oldAnimateComplete = options['animateOptions']['complete'];
+                            var oldAnimateComplete = options.animateOptions.complete;
                             var animateOptions = $.extend(true, { }, options.animateOptions, {
                                 'complete': function() {
                                     $animateDfd.resolve();
@@ -569,7 +570,7 @@ if (typeof jQuery !== 'undefined') {
                         });
 
                         if(options.animate === true) {
-                            var oldAnimateComplete = options['animateOptions']['complete'];
+                            var oldAnimateComplete = options.animateOptions.complete;
                             var animateOptions = $.extend(true, { }, options.animateOptions, {
                                 'complete': function() {
                                     $animateDfd.resolve();
@@ -599,7 +600,7 @@ if (typeof jQuery !== 'undefined') {
                     truncationPoint = html.length;
                 }
             } else {
-                DEBUG("truncate.js: skipped processing element with height " + originalHeight + "px < " + realMaxHeight + "px");
+                DEBUG("truncate.js: skipped processing element with height " + $el.height() + "px < " + realMaxHeight + "px");
                 truncationPoint = html.length;
             }
 
@@ -641,7 +642,7 @@ if (typeof jQuery !== 'undefined') {
             // store a reference to the jQuery object
             this.$el = $(el);
 
-            if(this.config['lineHeight'] === null) {
+            if(this.config.lineHeight === null) {
                 var empiricalLineHeight = NaN;
                 if("normal" === this.$el.css('line-height')) {
 
@@ -655,17 +656,17 @@ if (typeof jQuery !== 'undefined') {
                 }
 
                 if(!isNaN(empiricalLineHeight)) {
-                    this.config['lineHeight'] = empiricalLineHeight;
+                    this.config.lineHeight = empiricalLineHeight;
                 } else {
                     throw new Error("No \"lineHeight\" parameter was specified and none could be calculated.");
                 }
             }
 
             if('inline' === this.$el.css('display')) {
-                if(this.config['contextParent'] === null) {
-                    this.config['contextParent'] = closestBlockLevelAncestor(this.$el);
-                } else if('inline' === this.config['contextParent'].css('display')) {
-                    this.config['contextParent'] = closestBlockLevelAncestor(this.config['contextParent']);
+                if(this.config.contextParent === null) {
+                    this.config.contextParent = closestBlockLevelAncestor(this.$el);
+                } else if('inline' === this.config.contextParent.css('display')) {
+                    this.config.contextParent = closestBlockLevelAncestor(this.config.contextParent);
                 }
             }
 
@@ -685,9 +686,9 @@ if (typeof jQuery !== 'undefined') {
 
             update: function(updatedHtml) {
 
-                if(typeof updatedHtml === 'undefined') {
+                if(updatedHtml === undefined) {
                     var elementHtml = this.$el.html();
-                    if(typeof this.lastHtmlLength !== 'undefined' && elementHtml.length !== this.lastHtmlLength) {
+                    if(this.lastHtmlLength !== undefined && elementHtml.length !== this.lastHtmlLength) {
                         updatedHtml = elementHtml.substring(0,this.lastTruncationPoint) + this.html.substring(this.lastTruncationPoint);
                         this.html = updatedHtml;
                     }
@@ -707,7 +708,7 @@ if (typeof jQuery !== 'undefined') {
 
             var $el = $(this);
 
-            if(typeof methodName === 'undefined' || methodName === null || typeof methodName === 'object') {
+            if(methodName === undefined || methodName === null || typeof methodName === 'object') {
 
                 $el.each(function() {
                     var $this = $(this);
@@ -726,14 +727,14 @@ if (typeof jQuery !== 'undefined') {
                     var plugin = $(this).data('truncatePlugin');
                     if(typeof plugin[methodName] === 'function') {
                         var newResult = plugin[methodName].apply(plugin, Array.prototype.slice.call(methodArgs, 1));
-                        if(typeof result === 'undefined') {
+                        if(result === undefined) {
                             result = newResult;
                         }
                     }
                 });
             }
 
-            return typeof result !== 'undefined' ? result : this;
+            return result !== undefined ? result : this;
         };
-    })(jQuery);
+    }(jQuery));
 }
