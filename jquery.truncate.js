@@ -90,7 +90,7 @@
  *                  Allowed Values: true / false
  *                  Default Value: false
  *
- *     "animate" - Indicates whether the user-initiated transitions between truncated and full text should animate the height.  
+ *     "animate" - Indicates whether the user-initiated transitions between truncated and full text should animate the height.
  *                  Allowed Values: true / false
  *                  Default Value: false
  *
@@ -162,33 +162,33 @@ if (typeof jQuery !== 'undefined') {
         } : function(node, text) {
             node.textContent = text;
         };
-		
+
 		var browserFloorsLineHeight = false;
 		var browserRoundsBoxHeight = false;
-		
+
 		var calculateHeight = function(maxLines, lineHeight) {
-			
+
 			var rawHeight = maxLines * (browserFloorsLineHeight === true ? Math.floor(lineHeight) : lineHeight);
-			
+
 			return browserRoundsBoxHeight === true ? Math.round(rawHeight) : rawHeight;
 		};
-		
+
 		var calculateMaxHeight = function(maxLines, lineHeight) {
-			
+
 			var rawHeight = (maxLines + 1) * (browserFloorsLineHeight === true ? Math.floor(lineHeight) : lineHeight) - 1;
-			
+
 			return browserRoundsBoxHeight === true ? Math.round(rawHeight) : rawHeight;
 		};
-		
+
 		var setCustomBrowserBehavior = function() {
-			
+
 			var LINE_ROUND_UP_HEIGHT = 1.43125;
-			
+
 			var $detector = $('<div />', {
 				'id': 'truncate-detect-height-method',
 				'text': '. . . .' // two lines of text
 			});
-			
+
 			$detector.css({
 				'line-height': LINE_ROUND_UP_HEIGHT,
 				'font-size': '16px',
@@ -199,23 +199,23 @@ if (typeof jQuery !== 'undefined') {
 				'left': 0,
 				'visibility': 'hidden'
 			});
-			
+
 			$('body').append($detector);
-			
+
 			var calculatedLineHeight = parseFloat($detector.css('line-height'));
-			
+
 			var delta = Math.abs(calculatedLineHeight * 4 - $detector.height());
-			
+
 			if(delta === 0) {
 				return;
 			}
-			
+
 			if(delta < 1) {
 				browserRoundsBoxHeight = true;
 			} else if(delta > 1) {
 				browserFloorsLineHeight = true;
 			}
-			
+
 			setCustomBrowserBehavior = function() { };
 		};
 
@@ -233,11 +233,11 @@ if (typeof jQuery !== 'undefined') {
             // remove child nodes from this node and push all onto the queue in reverse order (this implements depth-first search).
             var rootChildren = $html.contents().detach();
             var n = 0;
-            for(n = rootChildren.size() - 1; n >= 0; n -= 1) {
+            for(n = rootChildren.length - 1; n >= 0; n -= 1) {
 
                 queue.push({$parent: $html, node: rootChildren.get(n)});
             }
-			
+
 			var queueItem, node, $node, nodeTextLen, nodeText, $nodeParent, match, lastWordOffset, children, i;
 
             while((queue.length > 0) && (textLen < offset) && (count < 100)) {
@@ -278,7 +278,7 @@ if (typeof jQuery !== 'undefined') {
                         break;
 
                     }
-					
+
                     textLen += nodeTextLen;
 
                 } else {
@@ -292,7 +292,7 @@ if (typeof jQuery !== 'undefined') {
                         // remove child nodes from this node and push all onto the queue in reverse order (this implements depth-first search).
                         children = $node.contents().detach();
                         i = 0;
-                        for(i = children.size() - 1; i >= 0; i -= 1) {
+                        for(i = children.length - 1; i >= 0; i -= 1) {
 
                             queue.push({$parent: $node, node: children.get(i)});
                         }
@@ -315,7 +315,7 @@ if (typeof jQuery !== 'undefined') {
 
         var closestBlockLevelAncestor = function($el) {
             var $parent = $el.parent();
-            while($parent !== undefined && $parent.size() > 0) {
+            while($parent !== undefined && $parent.length > 0) {
                 if('inline' !== $parent.css('display')) {
                     return $parent;
                 }
@@ -360,7 +360,7 @@ if (typeof jQuery !== 'undefined') {
                     }
                 }
             };
-			
+
 			setCustomBrowserBehavior();
 
             // options-based variables
@@ -389,7 +389,7 @@ if (typeof jQuery !== 'undefined') {
 
                 // If the contextParent contains the selected element, then they are ancestor-descendent.
                 // If not, then set the contextParent to the element itself.
-                if($contextParent.find($el).size() > 0) {
+                if($contextParent.find($el).length > 0) {
 
                     // If a contextParent was specified, then the cloned element itself must be found
                     // by navigating the original HTML structure and mirroring the navigation in the
@@ -397,7 +397,7 @@ if (typeof jQuery !== 'undefined') {
                     var childOffsets = [];
                     var $node = $el;
                     var $closestParent = $node.parent();
-                    while($closestParent.size() !== 0 && !($closestParent.find($contextParent).size() > 0)) {
+                    while($closestParent.length !== 0 && !($closestParent.find($contextParent).length > 0)) {
 
                         childOffsets.unshift($node.index());
                         $node = $closestParent;
